@@ -1,0 +1,7 @@
+**/assets/*
+**/node_modules/*
+**/html/*
+**/public/*
+auto-imports.d.ts
+components.d.ts
+yarn.lock

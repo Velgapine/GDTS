@@ -1,0 +1,33 @@
+{
+  // 设置运行环境
+  "env": {
+    "browser": true,
+    "es2021": true,
+    "node": true,
+    "vue/setup-compiler-macros": true
+  },
+  // 继承eslint推荐的规则集
+  "extends": [
+    "eslint:recommended",
+    "plugin:vue/vue3-recommended",
+    "plugin:@typescript-eslint/recommended",
+    "plugin:prettier/recommended", // 覆盖以上规则集，解决eslint与prettier的冲突
+    "./.eslintrc-auto.import.json"
+  ],
+  "parser": "vue-eslint-parser",
+  // 支持ts的最新语法
+  "parserOptions": {
+    "ecmaVersion": "latest",
+    "parser": "@typescript-eslint/parser",
+    "sourceType": "module"
+  },
+  // 添加vue和@typescript-eslint插件，增强eslint的能力
+  "plugins": ["vue", "@typescript-eslint"],
+  // 自定义规则
+  "rules": {
+    "@typescript-eslint/no-explicit-any": ["off"],
+    "vue/multi-word-component-names": "off",
+    "linebreak-style": ["error", "unix"],
+    "vue/require-default-prop": "off"
+  }
+}
