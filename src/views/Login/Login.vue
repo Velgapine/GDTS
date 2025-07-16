@@ -102,6 +102,8 @@ async function login() {
   loading.value = true;
   try {
     let { userName, password, roleId } = form;
+    password = CryptoJS.MD5(password).toString().toUpperCase();
+    //补上MD5加密,下次前后端开发商量好求你们
     if (isVisitor.value) {
       userName = 'visitor';
       password = '110';

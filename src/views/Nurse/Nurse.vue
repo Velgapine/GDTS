@@ -163,7 +163,7 @@ const add = () => {
   if (isModify.value) initForm(ruleForm);
   isModify.value = false;
   staffDialog.value = true;
-  getCard();
+  //getCard();
 };
 
 // 修改时给表单进行赋值
@@ -234,9 +234,27 @@ const getCard = async () => {
   cardLoad.value = false;
 };
 
-let timer = setInterval(() => {
-  // getCard();
-}, 2000);
+//意义不明的注释掉getcard方法哈,导致了bug,我修了.
+// let timer = setInterval(() => {
+//   // getCard();
+// }, 2000);
+let timer: number | null = null;
+
+//当打开新增窗口,才进行卡号查询
+//当关闭表单窗口,清空暂存区数据
+watch(staffDialog, (val) => {
+  if (val) {
+    //getCard()
+    timer = setInterval(getCard, 2000) as unknown as number;
+    //每次打开,清空刷卡区
+    cardNum.value = '';
+  } else {
+    if (timer) clearInterval(timer);
+    timer = null;
+    clear();
+    cardNum.value = '';
+  }
+});
 
 onMounted(async () => {
   deptOptions.value = await getDept();
@@ -254,7 +272,7 @@ const clear = async () => {
 };
 
 onUnmounted(() => {
-  clearInterval(timer);
+  if (timer) clearInterval(timer);
   clear();
 });
 

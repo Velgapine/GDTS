@@ -426,14 +426,37 @@ const getCard = async () => {
   cardLoad.value = false;
 };
 
-let timer = setInterval(() => {
-  getCard();
-}, 2000);
+// let timer = setInterval(() => {
+//   getCard();
+// }, 2000);
+
+/**
+ * @author Double-c-c
+ * @date 2025-07-16
+ * 此处重写了timer逻辑,修复了 没有打开新增窗口就不停进行卡号查询 的bug
+ * 将timer断言为number类型,更好进行null赋值和处理.
+ * 将源代码注释.如需要回退,使用旧的timer逻辑即可.
+ */
+let timer: number | null = null;
+
+watch(scopeDialog, (val) => {
+  if (val) {
+    getCard();
+    timer = setInterval(getCard, 2000) as unknown as number;
+    //每次打开,清空刷卡区
+    cardNum.value = '';
+  } else {
+    if (timer) clearInterval(timer);
+    timer = null;
+    cardNum.value = '';
+    clear();
+  }
+});
 
 onMounted(async () => {
   deptOptions.value = await getDept();
   chamOptions.value = await getCham();
-  getCard();
+  //getCard();
   await getTypeList();
   await getBrandList();
   getList();
@@ -449,7 +472,7 @@ const clear = async () => {
 };
 
 onUnmounted(() => {
-  clearInterval(timer);
+  if (timer) clearInterval(timer);
   clear();
 });
 
