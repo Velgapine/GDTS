@@ -102,13 +102,14 @@ async function login() {
   loading.value = true;
   try {
     let { userName, password, roleId } = form;
-    password = CryptoJS.MD5(password).toString().toUpperCase();
+
     //补上MD5加密,下次前后端开发商量好求你们
     if (isVisitor.value) {
       userName = 'visitor';
       password = '110';
       roleId = 3;
     }
+    password = CryptoJS.MD5(password).toString().toUpperCase();
     //此处删除了密码的md5加密，因为后台已经加密了，所以这里不需要加密
     const data = { userName, password, roleId };
     const res = (await user.login(data)) as any;

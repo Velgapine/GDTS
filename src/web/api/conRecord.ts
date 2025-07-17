@@ -25,8 +25,14 @@ export default {
     return request.post('/logExam2/update', data);
   },
   // 删除诊疗记录
+  /**
+   * @author LYS
+   * @description 修改为get方法
+   * @param id
+   * @returns
+   */
   remove(id: number) {
-    return request.post(`/logExam2/remove?id=${id}`);
+    return request.get(`/logExam2/remove?id=${id}`);
   },
   // 获取海东二院数据
   search(examNo: string) {

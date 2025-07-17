@@ -94,11 +94,13 @@
         <el-table-column label="检查项目" prop="itemName"></el-table-column>
         <el-table-column label="医生姓名" prop="staffName"></el-table-column>
         <el-table-column label="检查时间" prop="examTime" width="180px"></el-table-column>
-        <el-table-column label="检查结果" prop="isAbnormal">
+        <!-- 去除无用的检查结果 -->
+
+        <!-- <el-table-column label="检查结果" prop="isAbnormal">
           <template #default="{ row }">
             <span>{{ row.isAbnormal === '1' ? '阳性' : '阴性' }}</span>
           </template>
-        </el-table-column>
+        </el-table-column> -->
         <el-table-column v-if="!isVisitor" label="操作" width="180px">
           <template #default="{ row }">
             <div class="operate-btn">
@@ -173,11 +175,12 @@
           <el-table-column label="病人姓名" prop="name"></el-table-column>
           <el-table-column label="病人号" prop="patLocalid"></el-table-column>
           <el-table-column label="检查号" prop="examNo"></el-table-column>
-          <el-table-column label="检查结果" prop="isAbnoraml">
+          <!-- 去除无用的检查结果 -->
+          <!-- <el-table-column label="检查结果" prop="isAbnoraml">
             <template #default="{ row }">
               <span>{{ row.isAbnoraml === '1' ? '阳性' : '阴性' }}</span>
             </template>
-          </el-table-column>
+          </el-table-column> -->
           <el-table-column label="医生姓名" prop="staffName"></el-table-column>
           <el-table-column label="检查类别" prop="examClass"></el-table-column>
           <el-table-column label="检查子类" prop="examSubclass"></el-table-column>
@@ -270,11 +273,16 @@ const store = useStore();
 // 通过检查唯一号查询海东二院信息
 const searchData = ref<any[]>([]);
 
+/**
+ * 暂时将haidong 的ip修改到本地,方便测试
+ */
+
 const searchHaidong = async () => {
   try {
     // 改接口端口为8612
-    const baseUrl = process.env.NODE_ENV === 'development' ? 'http://1.117.155.214' : window.httpUrl.slice(0, -5);
-    const res = await fetch(`${baseUrl}:8612/haidong/search?examNo=${ruleForm.examNo}`, {
+    // const baseUrl = process.env.NODE_ENV === 'development' ? 'http://1.117.155.214' : window.httpUrl.slice(0, -5);
+    const baseUrl = process.env.NODE_ENV === 'development' ? 'http://127.0.0.1' : window.httpUrl.slice(0, -5);
+    const res = await fetch(`${baseUrl}:8610/haidong/fakesearch?examNo=${ruleForm.examNo}`, {
       method: 'GET',
       headers: {
         token: store.state.token,
@@ -338,6 +346,12 @@ const update = async (formEl: FormInstance | undefined) => {
   }
   dialogLoad.value = false;
 };
+
+/**
+ * @author LiYongSheng6
+ * @description 修复删除记录方法为Post
+ * @since 2025-07-17
+ */
 
 // 删除记录
 const remove = async (id: number) => {
