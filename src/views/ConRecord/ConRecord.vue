@@ -215,7 +215,7 @@ import initForm from '@/utils/initForm';
 import removeInvalid from '@/utils/removeInvalid';
 import confirm from '@/utils/confirm';
 import down from '@/web/utils/download';
-import { ElMessage } from 'element-plus/lib/components';
+// import { ElMessage } from 'element-plus/lib/components';
 // import store from '@/store';
 
 // 是否为访客登录
