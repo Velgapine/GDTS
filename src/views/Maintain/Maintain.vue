@@ -26,11 +26,20 @@
             {{ row.scopeId ? '内镜' : '洗消设备' }}
           </template>
         </el-table-column>
-        <el-table-column label="设备ID">
+
+        <el-table-column label="设备编号">
           <template #default="{ row }">
-            {{ row.scopeId ? row.scopeId : row.deviceId }}
+            {{ row.scopeId ? row.bodyNumber || '未知镜身号' : row.machineNum || '未知机器号' }}
           </template>
         </el-table-column>
+
+        <!-- 新增：设备类型名称 -->
+        <el-table-column label="设备类型名称">
+          <template #default="{ row }">
+            {{ row.scopeId ? row.scopeType || '未知内镜类型' : row.typeName || '未知设备类型' }}
+          </template>
+        </el-table-column>
+
         <el-table-column label="送修原因" prop="comment" />
         <el-table-column label="开始时间" prop="startTime" />
         <el-table-column label="结束时间" prop="endTime" />
