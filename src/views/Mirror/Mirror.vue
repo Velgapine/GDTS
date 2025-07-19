@@ -18,12 +18,12 @@
     </div>
     <el-row :gutter="20" align="middle" style="margin: 10px 0">
       <el-col :span="4">
-        <el-select v-model="listQuery.isDel" placeholder="请选择使用状态" clearable @change="getList">
+        <el-select v-model="listQuery.isDel" placeholder="请选择使用状态" clearable @change="handleIsDelChange">
           <el-option v-for="item in stateOptions" :key="item.value" :label="item.label" :value="item.value" />
         </el-select>
       </el-col>
       <el-col :span="4">
-        <el-select v-model="listQuery.state" placeholder="请选择维修状态" clearable @change="getList">
+        <el-select v-model="listQuery.state" placeholder="请选择维修状态" clearable @change="handleStateChange">
           <el-option v-for="item in fixOptions" :key="item.value" :label="item.label" :value="item.value" />
         </el-select>
       </el-col>
@@ -532,6 +532,21 @@ const fixOptions = [
   { label: '正常', value: 0 },
   { label: '维修中', value: 1 },
 ];
+
+// 新增使用状态变更处理函数
+const handleIsDelChange = () => {
+  // 状态变更时重置页码为1
+  listQuery.currentPage = 1;
+  // 重新查询数据
+  getList();
+};
+// 新增维修状态变更处理函数
+const handleStateChange = () => {
+  // 状态变更时重置页码为1
+  listQuery.currentPage = 1;
+  // 重新查询数据
+  getList();
+};
 
 // 科室和洗消室选项
 const deptOptions = ref<any[]>();
