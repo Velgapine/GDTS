@@ -215,6 +215,7 @@ import initForm from '@/utils/initForm';
 import removeInvalid from '@/utils/removeInvalid';
 import confirm from '@/utils/confirm';
 import down from '@/web/utils/download';
+// import { ElMessage } from 'element-plus/lib/components';
 // import store from '@/store';
 
 // 是否为访客登录
@@ -348,9 +349,9 @@ const update = async (formEl: FormInstance | undefined) => {
 };
 
 /**
- * @author LiYongSheng6
- * @description 修复删除记录方法为Post
- * @since 2025-07-17
+ * @author LYS-developer
+ * @description 修复删除记录方法为Get
+ * @since 2025-07-18
  */
 
 // 删除记录
