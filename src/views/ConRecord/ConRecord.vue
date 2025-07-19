@@ -141,6 +141,10 @@
         <el-col :span="12">
           <el-form-item :label="isModify ? '修改的组合号:' : '组合号：'" prop="ip_and_lensCode">
             <el-input v-model="ruleForm.ip_and_lensCode" placeholder="输入示例:192.168.0.1=test" style="width: 350px" />
+            <div v-if="!ruleForm.ip_and_lensCode || !isIpAndLensCodeValid" style="color: red; font-size: 12px">
+              <template v-if="!ruleForm.ip_and_lensCode"> 组合号必填 </template>
+              <template v-else> 格式不正确，示例：192.168.1.10=test </template>
+            </div>
           </el-form-item>
         </el-col>
         <el-col :span="8">
@@ -151,6 +155,7 @@
               style="width: 350px"
               :disabled="isModify"
             />
+            <div v-if="!ruleForm.examNo || !isExamNoValid" style="color: red; font-size: 12px">检查唯一号必填</div>
           </el-form-item>
         </el-col>
         <el-col :span="4"
@@ -217,11 +222,16 @@
           :disabled="!isModify && !isSelected"
           @click="update(ruleFormRef)" -->
         <my-btn
-          :disabled="!isModify && !isSelected"
+          :disabled="!isModify && (!isSelected || !isIpAndLensCodeValid || !isExamNoValid || !isPatLocalidValid)"
           :style="{
             background:
-              isModify || isSelected ? 'linear-gradient(180deg, #38F9D6 0%, #3EF0A4 59.17%, #6DEE99 100%)' : '#dcdfe6',
-            color: isModify || isSelected ? '#fff' : '#a8abb2',
+              isModify || (isSelected && isIpAndLensCodeValid && isExamNoValid && isPatLocalidValid)
+                ? 'linear-gradient(180deg, #38F9D6 0%, #3EF0A4 59.17%, #6DEE99 100%)'
+                : '#dcdfe6',
+            color:
+              isModify || (isSelected && isIpAndLensCodeValid && isExamNoValid && isPatLocalidValid)
+                ? '#fff'
+                : '#a8abb2',
             border: 'none',
             marginRight: '32px',
           }"
@@ -300,6 +310,7 @@ const ruleForm = reactive({
   staffName: '',
   examTime: '',
   isAbnormal: '',
+  forceInsert: false, // 是否强制插入
 });
 
 // 新增状态管理
@@ -308,10 +319,38 @@ const forceSubmitCount = ref(0); // 强制提交计数
 const lastSubmitTime = ref(0); // 上次提交时间
 const ruleFormRef = ref<FormInstance>();
 const rules = reactive<FormRules>({
-  // // ip_and_lensCode: [{ required: true, message: '必填', trigger: 'blur, change' }],
-  // examNo: [{ required: true, message: '必填', trigger: 'blur, change' }],
-  ip_and_lensCode: [{ required: true, message: '组合号必填', trigger: 'blur, change' }],
-  examNo: [{ required: true, message: '检查唯一号必填', trigger: 'blur, change' }],
+  ip_and_lensCode: [
+    { required: true, message: '', trigger: 'blur, change' },
+    {
+      validator: (rule: any, value: string, callback: any) => {
+        // 校验格式：IP=xxx
+        const reg = /^(25[0-5]|2[0-4]\d|1\d{2}|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d{2}|[1-9]?\d)){3}=[^=]+$/;
+        if (!value || reg.test(value)) {
+          callback();
+        } else {
+          callback(new Error(''));
+        }
+      },
+      trigger: 'blur, change',
+    },
+  ],
+  examNo: [{ required: true, message: '', trigger: 'blur, change' }],
+});
+
+// 实时校验组合号格式，决定按钮是否可用
+const isIpAndLensCodeValid = computed(() => {
+  const reg = /^(25[0-5]|2[0-4]\d|1\d{2}|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d{2}|[1-9]?\d)){3}=[^=]+$/;
+  return reg.test(ruleForm.ip_and_lensCode);
+});
+
+// 检查唯一号实时校验
+const isExamNoValid = computed(() => {
+  return typeof ruleForm.examNo === 'string' && ruleForm.examNo.trim().length > 0;
+});
+
+// 检查号实时校验
+const isPatLocalidValid = computed(() => {
+  return !!ruleForm.patLocalid && ruleForm.patLocalid.trim().length > 0;
 });
 
 const isSearch = ref(false); // 是否查询过信息
@@ -340,8 +379,8 @@ const searchHaidong = async () => {
     // 改接口端口为8612
     // const baseUrl = process.env.NODE_ENV === 'development' ? 'http://1.117.155.214' : window.httpUrl.slice(0, -5);
     const baseUrl = process.env.NODE_ENV === 'development' ? 'http://127.0.0.1' : window.httpUrl.slice(0, -5);
-    const res = await fetch(`${baseUrl}:8610/haidong/fakesearch?examNo=${ruleForm.examNo}`, {
-      // const res = await fetch(`${baseUrl}:8610/haidong/search?examNo=${ruleForm.examNo}`, {
+    //const res = await fetch(`${baseUrl}:8610/haidong/fakesearch?examNo=${ruleForm.examNo}`, {
+    const res = await fetch(`${baseUrl}:8610/haidong/search?examNo=${ruleForm.examNo}`, {
       method: 'GET',
       headers: {
         token: store.state.token,
@@ -409,6 +448,19 @@ const update = async (formEl: FormInstance | undefined) => {
     if (!formEl) return;
     await formEl.validate();
 
+    // 再次校验组合号和检查唯一号
+    const ipReg = /^(25[0-5]|2[0-4]\d|1\d{2}|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d{2}|[1-9]?\d)){3}=[^=]+$/;
+    if (ruleForm.ip_and_lensCode && !ipReg.test(ruleForm.ip_and_lensCode)) {
+      ElMessage.error('组合号格式不正确，示例：192.168.1.10=test');
+      dialogLoad.value = false;
+      return;
+    }
+    // 检查唯一号为空的情况不再弹窗，交给表单校验
+    if (typeof ruleForm.examNo !== 'string' || ruleForm.examNo.trim().length === 0) {
+      dialogLoad.value = false;
+      return;
+    }
+
     // 检查是否为修改模式，如果是修改模式则直接提交
     if (isModify.value) {
       const data = removeInvalid(ruleForm);
@@ -442,6 +494,7 @@ const update = async (formEl: FormInstance | undefined) => {
           ElMessage.warning('检测到连续点击，允许强制录入诊疗信息');
           // 强制提交逻辑
           const data = removeInvalid(ruleForm);
+          data.forceInsert = true;
           await conRecord.save(data);
           await getList();
           isModify.value = false;
@@ -450,6 +503,7 @@ const update = async (formEl: FormInstance | undefined) => {
           initForm(ruleForm);
           forceSubmitCount.value = 0;
           dialogLoad.value = false;
+          ruleForm.forceInsert = false;
           return;
         }
       } else {
