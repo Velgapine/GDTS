@@ -161,7 +161,8 @@
       </el-row>
       <!-- 展示查询后的信息 -->
       <el-row v-show="isSearch" justify="center" style="margin-bottom: 20px">
-        <span class="choice-tips">提示：点击表格数据进行选择</span>
+        <!-- <span class="choice-tips">提示：点击表格数据进行选择</span> -->
+        <span class="choice-tips">提示：点击表格数据选择胃镜或肠镜检查类型</span>
         <el-table
           v-loading="tableLoad"
           fit
@@ -183,24 +184,63 @@
           </el-table-column> -->
           <el-table-column label="医生姓名" prop="staffName"></el-table-column>
           <el-table-column label="检查类别" prop="examClass"></el-table-column>
-          <el-table-column label="检查子类" prop="examSubclass"></el-table-column>
-          <el-table-column label="检查项目" prop="itemName"></el-table-column>1
+          <!-- <el-table-column label="检查子类" prop="examSubclass"></el-table-column>
+          <el-table-column label="检查项目" prop="itemName"></el-table-column>1 -->
+          <el-table-column label="检查子类" prop="examSubclass">
+            <template #default="{ row }">
+              <span :class="{ highlight: row.examSubclass.includes('胃镜') || row.examSubclass.includes('肠镜') }">
+                {{ row.examSubclass }}
+              </span>
+            </template>
+          </el-table-column>
+          <el-table-column label="检查项目" prop="itemName">
+            <template #default="{ row }">
+              <span :class="{ highlight: row.itemName.includes('胃镜') || row.itemName.includes('肠镜') }">
+                {{ row.itemName }}
+              </span>
+            </template>
+          </el-table-column>
           <el-table-column label="检查时间" prop="examTime"></el-table-column>
         </el-table>
       </el-row>
+      <!-- 状态提示 -->
+      <el-row v-if="!isModify" justify="center" style="margin-bottom: 10px">
+        <span class="status-tips" :class="{ success: isSelected, warning: !isSelected }">
+          {{ isSelected ? '✓ 已选择胃镜或肠镜检查类型，可以点击完成' : '⚠ 请先查询并选择胃镜或肠镜检查类型' }}
+        </span>
+      </el-row>
       <el-row justify="center">
-        <my-btn color="linear-gradient(180deg, #38F9D6 0%, #3EF0A4 59.17%, #6DEE99 100%)" @click="update(ruleFormRef)"
-          >完成</my-btn
+        <!-- <my-btn color="linear-gradient(180deg, #38F9D6 0%, #3EF0A4 59.17%, #6DEE99 100%)" @click="update(ruleFormRef)"
+        >完成</my-btn -->
+        <!-- <my-btn 
+          :color="isModify || isSelected ? 'linear-gradient(180deg, #38F9D6 0%, #3EF0A4 59.17%, #6DEE99 100%)' : '#dcdfe6'"
+          :disabled="!isModify && !isSelected"
+          @click="update(ruleFormRef)" -->
+        <my-btn
+          :disabled="!isModify && !isSelected"
+          :style="{
+            background:
+              isModify || isSelected ? 'linear-gradient(180deg, #38F9D6 0%, #3EF0A4 59.17%, #6DEE99 100%)' : '#dcdfe6',
+            color: isModify || isSelected ? '#fff' : '#a8abb2',
+            border: 'none',
+            marginRight: '32px',
+          }"
+          @click="update(ruleFormRef)"
         >
+          完成
+        </my-btn>
         <my-btn
           color="#fff"
           style="border: 1px solid #e4e7ed"
           @click="
             conRecordDialog = false;
             isSearch = false;
+            isSelected = false;
+            forceSubmitCount = 0;
           "
-          >取消</my-btn
         >
+          取消
+        </my-btn>
       </el-row>
     </el-form>
   </el-dialog>
@@ -261,10 +301,17 @@ const ruleForm = reactive({
   examTime: '',
   isAbnormal: '',
 });
+
+// 新增状态管理
+const isSelected = ref(false); // 是否已选择检查类型
+const forceSubmitCount = ref(0); // 强制提交计数
+const lastSubmitTime = ref(0); // 上次提交时间
 const ruleFormRef = ref<FormInstance>();
 const rules = reactive<FormRules>({
-  // ip_and_lensCode: [{ required: true, message: '必填', trigger: 'blur, change' }],
-  examNo: [{ required: true, message: '必填', trigger: 'blur, change' }],
+  // // ip_and_lensCode: [{ required: true, message: '必填', trigger: 'blur, change' }],
+  // examNo: [{ required: true, message: '必填', trigger: 'blur, change' }],
+  ip_and_lensCode: [{ required: true, message: '组合号必填', trigger: 'blur, change' }],
+  examNo: [{ required: true, message: '检查唯一号必填', trigger: 'blur, change' }],
 });
 
 const isSearch = ref(false); // 是否查询过信息
@@ -280,10 +327,21 @@ const searchData = ref<any[]>([]);
 
 const searchHaidong = async () => {
   try {
+    // 验证必填字段
+    if (!ruleForm.ip_and_lensCode.trim()) {
+      ElMessage.error('请先输入组合号');
+      return;
+    }
+    if (!ruleForm.examNo.trim()) {
+      ElMessage.error('请先输入检查唯一号');
+      return;
+    }
+
     // 改接口端口为8612
     // const baseUrl = process.env.NODE_ENV === 'development' ? 'http://1.117.155.214' : window.httpUrl.slice(0, -5);
     const baseUrl = process.env.NODE_ENV === 'development' ? 'http://127.0.0.1' : window.httpUrl.slice(0, -5);
     const res = await fetch(`${baseUrl}:8610/haidong/fakesearch?examNo=${ruleForm.examNo}`, {
+      // const res = await fetch(`${baseUrl}:8610/haidong/search?examNo=${ruleForm.examNo}`, {
       method: 'GET',
       headers: {
         token: store.state.token,
@@ -292,8 +350,10 @@ const searchHaidong = async () => {
     const { data } = await res.json();
     searchData.value = data;
     isSearch.value = true;
+    isSelected.value = false; // 重置选择状态
   } catch (e) {
     console.log(e);
+    ElMessage.error('查询失败，请检查网络连接');
   }
 };
 
@@ -308,7 +368,18 @@ const handleCurrentChange = (curentRow: any) => {
   ruleForm.staffName = staffName;
   ruleForm.examTime = examTime;
   ruleForm.isAbnormal = isAbnoraml;
-  ElMessage.success(`已选择检查子类为${examSubclass}、检查项目为${itemName}的记录`);
+
+  // 检查是否为胃镜或肠镜检查
+  const isGastroscopy = examSubclass.includes('胃镜') || itemName.includes('胃镜');
+  const isColonoscopy = examSubclass.includes('肠镜') || itemName.includes('肠镜');
+
+  if (isGastroscopy || isColonoscopy) {
+    isSelected.value = true;
+    ElMessage.success(`已选择检查子类为${examSubclass}、检查项目为${itemName}的记录`);
+  } else {
+    isSelected.value = false;
+    ElMessage.warning('请选择胃镜或肠镜检查类型');
+  }
 };
 
 // 点击添加
@@ -317,6 +388,8 @@ const add = () => {
   if (isModify.value) initForm(ruleForm);
   isModify.value = false;
   isSearch.value = false;
+  isSelected.value = false; // 重置选择状态
+  forceSubmitCount.value = 0; // 重置强制提交计数
   conRecordDialog.value = true;
 };
 
@@ -325,6 +398,8 @@ const modify = (row: any) => {
   Object.assign(ruleForm, row);
   isModify.value = true;
   isSearch.value = true;
+  isSelected.value = true; // 修改模式下默认已选择
+  forceSubmitCount.value = 0; // 重置强制提交计数
   conRecordDialog.value = true;
 };
 
@@ -333,15 +408,70 @@ const update = async (formEl: FormInstance | undefined) => {
   try {
     if (!formEl) return;
     await formEl.validate();
+
+    // 检查是否为修改模式，如果是修改模式则直接提交
+    if (isModify.value) {
+      const data = removeInvalid(ruleForm);
+      await conRecord.update(data);
+      await getList();
+      isModify.value = false;
+      isSearch.value = false;
+      conRecordDialog.value = false;
+      initForm(ruleForm);
+      dialogLoad.value = false;
+      return;
+    }
+
+    // 新增模式下的验证逻辑
+    const currentTime = Date.now();
+
+    // 检查是否已选择检查类型
+    if (!isSelected.value) {
+      // 检查是否为强制提交（连续点击两次）
+      if (currentTime - lastSubmitTime.value < 2000) {
+        // 2秒内连续点击
+        forceSubmitCount.value++;
+        if (forceSubmitCount.value >= 2) {
+          // 强制提交前的基本验证
+          if (!ruleForm.ip_and_lensCode.trim() || !ruleForm.examNo.trim()) {
+            ElMessage.error('强制提交时组合号和检查唯一号仍为必填项');
+            dialogLoad.value = false;
+            return;
+          }
+
+          ElMessage.warning('检测到连续点击，允许强制录入诊疗信息');
+          // 强制提交逻辑
+          const data = removeInvalid(ruleForm);
+          await conRecord.save(data);
+          await getList();
+          isModify.value = false;
+          isSearch.value = false;
+          conRecordDialog.value = false;
+          initForm(ruleForm);
+          forceSubmitCount.value = 0;
+          dialogLoad.value = false;
+          return;
+        }
+      } else {
+        forceSubmitCount.value = 1;
+      }
+      lastSubmitTime.value = currentTime;
+
+      ElMessage.error('请先查询并选择胃镜或肠镜检查类型');
+      dialogLoad.value = false;
+      return;
+    }
+
+    // 正常提交逻辑
     const data = removeInvalid(ruleForm);
-    isModify.value ? await conRecord.update(data) : await conRecord.save(data);
-    // 更新表单
+    await conRecord.save(data);
     await getList();
     isModify.value = false;
     isSearch.value = false;
     conRecordDialog.value = false;
-    // 将表单所有值赋值为空值
     initForm(ruleForm);
+    isSelected.value = false;
+    forceSubmitCount.value = 0;
   } catch (e) {
     console.log(e);
   }
@@ -506,5 +636,31 @@ header {
 .choice-tips {
   padding-bottom: 10px;
   color: red;
+}
+
+.status-tips {
+  font-size: 14px;
+  padding: 8px 16px;
+  border-radius: 4px;
+
+  &.success {
+    color: #67c23a;
+    background-color: #f0f9ff;
+    border: 1px solid #b3d8ff;
+  }
+
+  &.warning {
+    color: #e6a23c;
+    background-color: #fdf6ec;
+    border: 1px solid #f5dab1;
+  }
+}
+
+.highlight {
+  color: #409eff;
+  font-weight: bold;
+  background-color: #f0f9ff;
+  padding: 2px 6px;
+  border-radius: 3px;
 }
 </style>
