@@ -16,21 +16,19 @@ export default {
   getList(data: any) {
     return request.get('/logExam2/list', data);
   },
-  // 添加诊疗记录
+  // 添加诊疗记录（暂时不用）
   save(data: any) {
     return request.post('/logExam2/save', data);
+  },
+  // 批量添加诊疗记录
+  saveBatch(dataList: any[]) {
+    return request.post('/logExam2/save', dataList);
   },
   // 修改诊疗记录
   update(data: any) {
     return request.post('/logExam2/update', data);
   },
   // 删除诊疗记录
-  /**
-   * @author LYS
-   * @description 修改为get方法
-   * @param id
-   * @returns
-   */
   remove(id: number) {
     return request.get(`/logExam2/remove?id=${id}`);
   },
