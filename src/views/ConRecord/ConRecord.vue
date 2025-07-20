@@ -1,10 +1,10 @@
 <template>
   <header v-show="!isVisitor">
-    <div class="title">病人管理</div>
+    <div class="title">诊疗管理</div>
     <div class="sub-title">
-      <span>病人管理</span>
+      <span>诊疗管理</span>
       <el-icon><ArrowRight /></el-icon>
-      <span>诊疗记录</span>
+      <span>诊疗记录管理</span>
       <el-icon><ArrowRight /></el-icon>
     </div>
   </header>
@@ -93,7 +93,7 @@
         <el-table-column label="检查子类" prop="examSubclass"></el-table-column>
         <el-table-column label="检查项目" prop="itemName"></el-table-column>
         <el-table-column label="医生姓名" prop="staffName"></el-table-column>
-        <el-table-column label="检查时间" prop="examTime" width="180px"></el-table-column>
+        <el-table-column label="检查登记时间" prop="examTime" width="180px"></el-table-column>
         <!-- 去除无用的检查结果 -->
 
         <!-- <el-table-column label="检查结果" prop="isAbnormal">
@@ -139,10 +139,10 @@
     >
       <el-row justify="start">
         <el-col :span="12">
-          <el-form-item :label="isModify ? '修改的组合号:' : '组合号：'" prop="ip_and_lensCode">
+          <el-form-item :label="isModify ? '修改的组合号①:' : '组合号①：'" prop="ip_and_lensCode">
             <el-input v-model="ruleForm.ip_and_lensCode" placeholder="输入示例:192.168.0.1=test" style="width: 350px" />
             <div v-if="!ruleForm.ip_and_lensCode || !isIpAndLensCodeValid" style="color: red; font-size: 12px">
-              <template v-if="!ruleForm.ip_and_lensCode"> 组合号必填 </template>
+              <template v-if="!ruleForm.ip_and_lensCode"> 组合号①必填 </template>
               <template v-else> 格式不正确，示例：192.168.1.10=test </template>
             </div>
           </el-form-item>
@@ -163,6 +163,29 @@
             >查询</el-button
           ></el-col
         >
+      </el-row>
+      <!-- 新增组合号②输入框 -->
+      <el-row justify="start">
+        <el-col :span="12">
+          <el-form-item label="启用组合号②：">
+            <el-switch v-model="enableLensCode2" />
+          </el-form-item>
+        </el-col>
+      </el-row>
+      <el-row v-if="enableLensCode2" justify="start">
+        <el-col :span="12">
+          <el-form-item :label="isModify ? '修改的组合号②:' : '组合号②：'" prop="ip_and_lensCode2">
+            <el-input
+              v-model="ruleForm.ip_and_lensCode2"
+              placeholder="输入示例:192.168.0.2=test"
+              style="width: 350px"
+            />
+            <div v-if="!ruleForm.ip_and_lensCode2 || !isIpAndLensCode2Valid" style="color: red; font-size: 12px">
+              <template v-if="!ruleForm.ip_and_lensCode2"> 组合号②必填 </template>
+              <template v-else> 格式不正确，示例：192.168.1.10=test </template>
+            </div>
+          </el-form-item>
+        </el-col>
       </el-row>
       <!-- 展示查询后的信息 -->
       <el-row v-show="isSearch" justify="center" style="margin-bottom: 20px">
@@ -205,7 +228,7 @@
               </span>
             </template>
           </el-table-column>
-          <el-table-column label="检查时间" prop="examTime"></el-table-column>
+          <el-table-column label="检查登记时间" prop="examTime"></el-table-column>
         </el-table>
       </el-row>
       <!-- 状态提示 -->
@@ -222,14 +245,31 @@
           :disabled="!isModify && !isSelected"
           @click="update(ruleFormRef)" -->
         <my-btn
-          :disabled="!isModify && (!isSelected || !isIpAndLensCodeValid || !isExamNoValid || !isPatLocalidValid)"
+          :disabled="
+            !isModify &&
+            (!isSelected ||
+              !isIpAndLensCodeValid ||
+              (enableLensCode2 && !isIpAndLensCode2Valid) ||
+              !isExamNoValid ||
+              !isPatLocalidValid)
+          "
           :style="{
             background:
-              isModify || (isSelected && isIpAndLensCodeValid && isExamNoValid && isPatLocalidValid)
+              isModify ||
+              (isSelected &&
+                isIpAndLensCodeValid &&
+                (!enableLensCode2 || isIpAndLensCode2Valid) &&
+                isExamNoValid &&
+                isPatLocalidValid)
                 ? 'linear-gradient(180deg, #38F9D6 0%, #3EF0A4 59.17%, #6DEE99 100%)'
                 : '#dcdfe6',
             color:
-              isModify || (isSelected && isIpAndLensCodeValid && isExamNoValid && isPatLocalidValid)
+              isModify ||
+              (isSelected &&
+                isIpAndLensCodeValid &&
+                (!enableLensCode2 || isIpAndLensCode2Valid) &&
+                isExamNoValid &&
+                isPatLocalidValid)
                 ? '#fff'
                 : '#a8abb2',
             border: 'none',
@@ -247,6 +287,8 @@
             isSearch = false;
             isSelected = false;
             forceSubmitCount = 0;
+            enableLensCode2 = false;
+            ruleForm.ip_and_lensCode2 = '';
           "
         >
           取消
@@ -298,6 +340,7 @@ const listQuery = reactive({
 
 const ruleForm = reactive({
   ip_and_lensCode: '', // 合并的字段，上传后会拆分成下两个字段
+  ip_and_lensCode2: '', // 新增的组合号②
   ip: '',
   lensCode: '',
   examNo: '', // 诊疗室唯一id
@@ -317,9 +360,25 @@ const ruleForm = reactive({
 const isSelected = ref(false); // 是否已选择检查类型
 const forceSubmitCount = ref(0); // 强制提交计数
 const lastSubmitTime = ref(0); // 上次提交时间
+const enableLensCode2 = ref(false); // 是否启用组合号②
 const ruleFormRef = ref<FormInstance>();
 const rules = reactive<FormRules>({
   ip_and_lensCode: [
+    { required: true, message: '', trigger: 'blur, change' },
+    {
+      validator: (rule: any, value: string, callback: any) => {
+        // 校验格式：IP=xxx
+        const reg = /^(25[0-5]|2[0-4]\d|1\d{2}|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d{2}|[1-9]?\d)){3}=[^=]+$/;
+        if (!value || reg.test(value)) {
+          callback();
+        } else {
+          callback(new Error(''));
+        }
+      },
+      trigger: 'blur, change',
+    },
+  ],
+  ip_and_lensCode2: [
     { required: true, message: '', trigger: 'blur, change' },
     {
       validator: (rule: any, value: string, callback: any) => {
@@ -341,6 +400,14 @@ const rules = reactive<FormRules>({
 const isIpAndLensCodeValid = computed(() => {
   const reg = /^(25[0-5]|2[0-4]\d|1\d{2}|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d{2}|[1-9]?\d)){3}=[^=]+$/;
   return reg.test(ruleForm.ip_and_lensCode);
+});
+
+// 组合号②实时校验
+const isIpAndLensCode2Valid = computed(() => {
+  // 如果未启用组合号②，则不需要校验
+  if (!enableLensCode2.value) return true;
+  const reg = /^(25[0-5]|2[0-4]\d|1\d{2}|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d{2}|[1-9]?\d)){3}=[^=]+$/;
+  return reg.test(ruleForm.ip_and_lensCode2);
 });
 
 // 检查唯一号实时校验
@@ -429,6 +496,8 @@ const add = () => {
   isSearch.value = false;
   isSelected.value = false; // 重置选择状态
   forceSubmitCount.value = 0; // 重置强制提交计数
+  enableLensCode2.value = false; // 重置组合号②开关
+  ruleForm.ip_and_lensCode2 = ''; // 清空组合号②
   conRecordDialog.value = true;
 };
 
@@ -451,7 +520,13 @@ const update = async (formEl: FormInstance | undefined) => {
     // 再次校验组合号和检查唯一号
     const ipReg = /^(25[0-5]|2[0-4]\d|1\d{2}|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d{2}|[1-9]?\d)){3}=[^=]+$/;
     if (ruleForm.ip_and_lensCode && !ipReg.test(ruleForm.ip_and_lensCode)) {
-      ElMessage.error('组合号格式不正确，示例：192.168.1.10=test');
+      ElMessage.error('组合号①格式不正确，示例：192.168.1.10=test');
+      dialogLoad.value = false;
+      return;
+    }
+    // 只有启用组合号②时才进行校验
+    if (enableLensCode2.value && ruleForm.ip_and_lensCode2 && !ipReg.test(ruleForm.ip_and_lensCode2)) {
+      ElMessage.error('组合号②格式不正确，示例：192.168.1.10=test');
       dialogLoad.value = false;
       return;
     }
@@ -495,6 +570,7 @@ const update = async (formEl: FormInstance | undefined) => {
           // 强制提交逻辑
           const data = removeInvalid(ruleForm);
           data.forceInsert = true;
+          if (!enableLensCode2.value) data.ip_and_lensCode2 = null;
           await conRecord.save(data);
           await getList();
           isModify.value = false;
@@ -518,6 +594,7 @@ const update = async (formEl: FormInstance | undefined) => {
 
     // 正常提交逻辑
     const data = removeInvalid(ruleForm);
+    if (!enableLensCode2.value) data.ip_and_lensCode2 = null;
     await conRecord.save(data);
     await getList();
     isModify.value = false;
@@ -544,7 +621,9 @@ const remove = async (id: number) => {
     await confirm('您确定要删除吗？');
     await conRecord.remove(id);
     getList();
+    ElMessage.success('该记录已成功删除');
   } catch (e) {
+    ElMessage.error('删除失败');
     console.log(e);
   }
 };
