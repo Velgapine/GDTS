@@ -683,6 +683,7 @@ watch(enableLensCode2, (newVal, oldVal) => {
       });
     }
     // 开启开关时不清除数据，保持现有选择状态
+    isSelected.value = false;
   }
 });
 
@@ -917,11 +918,12 @@ const update = async (formEl: FormInstance | undefined) => {
 const remove = async (id: number) => {
   try {
     await confirm('您确定要删除吗？');
-    await conRecord.remove(id);
+    const response = await conRecord.remove(id);
     getList();
-    ElMessage.success('该记录已成功删除');
+    const res = response.data ?? response;
+    if (res.code == 4000) ElMessage.success('该记录已成功删除');
+    else ElMessage.error('删除失败');
   } catch (e) {
-    ElMessage.error('删除失败');
     console.log(e);
   }
 };
