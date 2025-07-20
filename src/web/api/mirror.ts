@@ -14,6 +14,10 @@ const mirror = {
   remove(id: string) {
     return request.post('scope/remove', { id });
   },
+  //解绑
+  unbind(id: string) {
+    return request.post('scope/unbind', { id });
+  },
   // 从数据库中删除
   del(id: string) {
     return request.post('scope/delete', { id });

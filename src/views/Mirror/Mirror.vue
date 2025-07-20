@@ -72,7 +72,8 @@
         <el-table-column prop="scopeName" label="名称" />
         <el-table-column label="使用状态">
           <template #default="{ row }">
-            <span v-if="row.isDel === 0" style="color: #409eff">正常</span>
+            <span v-if="row.isDel == 0 && row.scopeNum" style="color: #409eff">正常</span>
+            <span v-else-if="row.isDel == 0 && !row.scopeNum" style="color: red"> 正常(未绑定)</span>
             <span v-else style="color: #ff3333">弃用</span>
           </template>
         </el-table-column>
@@ -110,6 +111,7 @@
               <span v-show="row.isDel === 0 && row.state === 'OK'" @click="modify(row)">编辑</span>
               <span v-show="row.isDel === 0 && row.state === 'OK'" @click="remove(row.id)">弃用</span>
               <span v-show="row.isDel === 0 && row.state === 'OK'" @click="toMainTain(row.id)">送修</span>
+              <span v-show="row.isDel === 0 && row.state === 'OK' && row.scopeNum" @click="unbind(row.id)">解绑</span>
               <span v-show="row.isDel === 0 && row.state === 'MAINTAIN'" @click="showDialog(row.id)">恢复</span>
               <span v-show="username === 'Administrator'" class="del-btn" @click="del(row.id)">删除</span>
             </div>
@@ -343,10 +345,11 @@ const ruleForm = reactive({
   comment: '', // 职位
 });
 const ruleFormRef = ref<FormInstance>();
+//此处修改镜子卡号可以为空
 const rules = reactive<FormRules>({
   scopeName: [{ required: true, message: '必填', trigger: 'blur, change' }],
   scopeTypeId: [{ required: true, message: '必填', trigger: 'blur, change' }],
-  scopeNum: [{ required: true, message: '必填', trigger: 'blur, change' }],
+  scopeNum: [{ message: '必填', trigger: 'blur, change' }],
 });
 
 // 点击添加
@@ -390,8 +393,27 @@ const remove = async (id: string) => {
   dialogLoad.value = true;
   try {
     await confirm('您确定要弃用吗？');
-    await mirror.remove(id);
+    const res = await mirror.remove(id);
+    if (res.data.code === 5000 && res.data.msg === '磁卡未解绑') {
+      ElMessage.error('请先解绑磁卡！');
+      return;
+    }
     getList();
+  } catch (e) {
+    console.log(e);
+  }
+  dialogLoad.value = false;
+};
+
+//解绑卡号
+const unbind = async (id: string) => {
+  dialogLoad.value = true;
+  try {
+    await confirm('您确定要解绑吗？');
+    const res = await mirror.unbind(id);
+    ElMessage.success('解绑成功!');
+
+    await getList();
   } catch (e) {
     console.log(e);
   }
