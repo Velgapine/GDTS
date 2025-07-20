@@ -23,6 +23,7 @@
       >
         <div class="inf" :class="{ blueName: item.isMachineWash }">
           <div class="name">{{ item.scopeName }}</div>
+          <div v-if="item.name" class="patient">病人：{{ item.name }}</div>
           <div class="date">{{ item.beginTime }}</div>
         </div>
         <div class="show">
@@ -77,7 +78,6 @@ import { Setting, Plus } from '@element-plus/icons-vue';
 import record from '@/web/api/washRecord';
 import flowStep from '@/web/api/flowStep';
 import confirm from '@/utils/confirm';
-// import { ElMessage } from 'element-plus/lib/components';
 
 const load = ref(false);
 const dialogLoad = ref(false);
