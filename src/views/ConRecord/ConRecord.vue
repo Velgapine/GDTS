@@ -3,9 +3,13 @@
     <div class="title">诊疗管理</div>
     <div class="sub-title">
       <span>诊疗管理</span>
-      <el-icon><ArrowRight /></el-icon>
+      <el-icon>
+        <ArrowRight />
+      </el-icon>
       <span>诊疗记录管理</span>
-      <el-icon><ArrowRight /></el-icon>
+      <el-icon>
+        <ArrowRight />
+      </el-icon>
     </div>
   </header>
   <div class="container">
@@ -100,7 +104,7 @@
           <template #default="{ row }">
             <span>{{ row.isAbnormal === '1' ? '阳性' : '阴性' }}</span>
           </template>
-        </el-table-column> -->
+</el-table-column> -->
         <el-table-column v-if="!isVisitor" label="操作" width="180px">
           <template #default="{ row }">
             <div class="operate-btn">
@@ -139,7 +143,7 @@
     >
       <el-row justify="start">
         <el-col :span="12">
-          <el-form-item :label="isModify ? '修改的组合号①:' : '组合号①：'" prop="ip_and_lensCode">
+          <el-form-item :label="isModify ? '修改组合号:' : '组合号①：'" prop="ip_and_lensCode">
             <el-input v-model="ruleForm.ip_and_lensCode" placeholder="输入示例:192.168.0.1=test" style="width: 350px" />
             <div v-if="!ruleForm.ip_and_lensCode || !isIpAndLensCodeValid" style="color: red; font-size: 12px">
               <template v-if="!ruleForm.ip_and_lensCode"> 组合号①必填 </template>
@@ -165,7 +169,7 @@
         >
       </el-row>
       <!-- 新增组合号②输入框 -->
-      <el-row justify="start">
+      <el-row v-if="!isModify" justify="start">
         <el-col :span="12">
           <el-form-item label="启用组合号②：">
             <el-switch v-model="enableLensCode2" />
@@ -211,13 +215,22 @@
             </template>
           </el-table-column> -->
           <el-table-column label="医生姓名" prop="staffName"></el-table-column>
-          <el-table-column label="检查类别" prop="examClass"></el-table-column>
+          <!-- <el-table-column label="检查类别" prop="examClass"></el-table-column> -->
+          <el-table-column label="检查类别" prop="examClass">
+            <template #default="{ row }">
+              <span :class="{ highlight: row.examClass.includes('胃镜') || row.examClass.includes('肠镜') }">
+                {{ row.examClass }}
+                <span v-if="row.markNumber" class="mark-number">{{ row.markNumber }}</span>
+              </span>
+            </template>
+          </el-table-column>
           <!-- <el-table-column label="检查子类" prop="examSubclass"></el-table-column>
           <el-table-column label="检查项目" prop="itemName"></el-table-column>1 -->
           <el-table-column label="检查子类" prop="examSubclass">
             <template #default="{ row }">
               <span :class="{ highlight: row.examSubclass.includes('胃镜') || row.examSubclass.includes('肠镜') }">
                 {{ row.examSubclass }}
+                <!-- <span v-if="row.markNumber" class="mark-number">{{ row.markNumber }}</span> -->
               </span>
             </template>
           </el-table-column>
@@ -234,10 +247,29 @@
       <!-- 状态提示 -->
       <el-row v-if="!isModify" justify="center" style="margin-bottom: 10px">
         <span class="status-tips" :class="{ success: isSelected, warning: !isSelected }">
-          {{ isSelected ? '✓ 已选择胃镜或肠镜检查类型，可以点击完成' : '⚠ 请先查询并选择胃镜或肠镜检查类型' }}
+          {{ isSelected ? '✓ 已选择胃镜或肠镜检查类型，可以点击完成' : '⚠ 请优先查询并选择胃镜或肠镜检查类型' }}
         </span>
       </el-row>
-      <el-row justify="center">
+      <!-- 选择状态提示 -->
+      <el-row v-if="enableLensCode2 && isSearch" justify="center" style="margin-bottom: 20px">
+        <div class="selection-status">
+          <span
+            class="status-item"
+            :class="{ selected: selectedData1, nonGastro: selectedData1 && !isGastrointestinalData(selectedData1) }"
+          >
+            选择①: {{ selectedData1 ? `${selectedData1.name} (${selectedData1.examClass})` : '未选择' }}
+            <el-button v-if="selectedData1" type="danger" size="small" @click="cancelSelection(1)">取消</el-button>
+          </span>
+          <span
+            class="status-item"
+            :class="{ selected: selectedData2, nonGastro: selectedData2 && !isGastrointestinalData(selectedData2) }"
+          >
+            选择②: {{ selectedData2 ? `${selectedData2.name} (${selectedData2.examClass})` : '未选择' }}
+            <el-button v-if="selectedData2" type="danger" size="small" @click="cancelSelection(2)">取消</el-button>
+          </span>
+        </div>
+      </el-row>
+      <el-row justify="center" style="margin-top: 20px">
         <!-- <my-btn color="linear-gradient(180deg, #38F9D6 0%, #3EF0A4 59.17%, #6DEE99 100%)" @click="update(ruleFormRef)"
         >完成</my-btn -->
         <!-- <my-btn 
@@ -255,25 +287,12 @@
           "
           :style="{
             background:
-              isModify ||
-              (isSelected &&
-                isIpAndLensCodeValid &&
-                (!enableLensCode2 || isIpAndLensCode2Valid) &&
-                isExamNoValid &&
-                isPatLocalidValid)
-                ? 'linear-gradient(180deg, #38F9D6 0%, #3EF0A4 59.17%, #6DEE99 100%)'
-                : '#dcdfe6',
-            color:
-              isModify ||
-              (isSelected &&
-                isIpAndLensCodeValid &&
-                (!enableLensCode2 || isIpAndLensCode2Valid) &&
-                isExamNoValid &&
-                isPatLocalidValid)
-                ? '#fff'
-                : '#a8abb2',
+              isModify || isSelected ? 'linear-gradient(180deg, #38F9D6 0%, #3EF0A4 59.17%, #6DEE99 100%)' : '#dcdfe6',
+            color: isModify || isSelected ? '#fff' : '#a8abb2',
             border: 'none',
             marginRight: '32px',
+            cursor: 'pointer',
+            transition: 'all 0.2s ease',
           }"
           @click="update(ruleFormRef)"
         >
@@ -289,6 +308,8 @@
             forceSubmitCount = 0;
             enableLensCode2 = false;
             ruleForm.ip_and_lensCode2 = '';
+            selectedData1 = null;
+            selectedData2 = null;
           "
         >
           取消
@@ -361,6 +382,8 @@ const isSelected = ref(false); // 是否已选择检查类型
 const forceSubmitCount = ref(0); // 强制提交计数
 const lastSubmitTime = ref(0); // 上次提交时间
 const enableLensCode2 = ref(false); // 是否启用组合号②
+const selectedData1 = ref<any>(null); // 第一次选择的数据
+const selectedData2 = ref<any>(null); // 第二次选择的数据
 const ruleFormRef = ref<FormInstance>();
 const rules = reactive<FormRules>({
   ip_and_lensCode: [
@@ -443,6 +466,13 @@ const searchHaidong = async () => {
       return;
     }
 
+    // 保存当前选择的数据
+    const currentSelected1 = selectedData1.value;
+    const currentSelected2 = selectedData2.value;
+    const currentIsSelected = isSelected.value;
+
+    console.log('查询前保存的选择数据:', { currentSelected1, currentSelected2, currentIsSelected });
+
     // 改接口端口为8612
     // const baseUrl = process.env.NODE_ENV === 'development' ? 'http://1.117.155.214' : window.httpUrl.slice(0, -5);
     const baseUrl = process.env.NODE_ENV === 'development' ? 'http://127.0.0.1' : window.httpUrl.slice(0, -5);
@@ -454,9 +484,53 @@ const searchHaidong = async () => {
       },
     });
     const { data } = await res.json();
-    searchData.value = data;
+
+    // 设置新数据
+    searchData.value = data.map((item: any) => ({
+      ...item,
+      markNumber: '', // 确保每个新数据项都没有标记
+    }));
+
     isSearch.value = true;
-    isSelected.value = false; // 重置选择状态
+
+    // 恢复选择状态
+    selectedData1.value = currentSelected1;
+    selectedData2.value = currentSelected2;
+    isSelected.value = currentIsSelected;
+
+    console.log('查询后恢复的选择数据:', {
+      selectedData1: selectedData1.value,
+      selectedData2: selectedData2.value,
+      isSelected: isSelected.value,
+    });
+
+    // 重新设置标记
+    if (currentSelected1) {
+      const row1 = searchData.value.find((item) => item.examNo === currentSelected1.examNo);
+      if (row1) {
+        row1.markNumber = '①';
+        console.log('重新设置标记①:', row1);
+      } else {
+        console.log('未找到匹配的行①:', currentSelected1.examNo);
+      }
+    }
+    if (currentSelected2) {
+      const row2 = searchData.value.find((item) => item.examNo === currentSelected2.examNo);
+      if (row2) {
+        row2.markNumber = '②';
+        console.log('重新设置标记②:', row2);
+      } else {
+        console.log('未找到匹配的行②:', currentSelected2.examNo);
+      }
+    }
+
+    // 清除表格当前选中行的指针
+    nextTick(() => {
+      const table = document.querySelector('.el-table') as any;
+      if (table && table.clearCurrentRow) {
+        table.clearCurrentRow();
+      }
+    });
   } catch (e) {
     console.log(e);
     ElMessage.error('查询失败，请检查网络连接');
@@ -464,29 +538,177 @@ const searchHaidong = async () => {
 };
 
 const handleCurrentChange = (curentRow: any) => {
-  const { examClass, examNo, examSubclass, examTime, isAbnoraml, itemName, name, patLocalid, staffName } = curentRow;
-  ruleForm.examNo = examNo;
-  ruleForm.patLocalid = patLocalid;
-  ruleForm.name = name;
-  ruleForm.examClass = examClass;
-  ruleForm.examSubclass = examSubclass;
-  ruleForm.itemName = itemName;
-  ruleForm.staffName = staffName;
-  ruleForm.examTime = examTime;
-  ruleForm.isAbnormal = isAbnoraml;
+  if (!enableLensCode2.value) {
+    // 单选逻辑（原有逻辑）
+    const { examClass, examNo, examSubclass, examTime, isAbnoraml, itemName, name, patLocalid, staffName } = curentRow;
+    ruleForm.examNo = examNo;
+    ruleForm.patLocalid = patLocalid;
+    ruleForm.name = name;
+    ruleForm.examClass = examClass;
+    ruleForm.examSubclass = examSubclass;
+    ruleForm.itemName = itemName;
+    ruleForm.staffName = staffName;
+    ruleForm.examTime = examTime;
+    ruleForm.isAbnormal = isAbnoraml;
 
-  // 检查是否为胃镜或肠镜检查
-  const isGastroscopy = examSubclass.includes('胃镜') || itemName.includes('胃镜');
-  const isColonoscopy = examSubclass.includes('肠镜') || itemName.includes('肠镜');
+    // 检查是否为胃镜或肠镜检查
+    const isGastroscopy = examSubclass.includes('胃镜') || itemName.includes('胃镜');
+    const isColonoscopy = examSubclass.includes('肠镜') || itemName.includes('肠镜');
 
-  if (isGastroscopy || isColonoscopy) {
-    isSelected.value = true;
-    ElMessage.success(`已选择检查子类为${examSubclass}、检查项目为${itemName}的记录`);
+    if (isGastroscopy || isColonoscopy) {
+      isSelected.value = true;
+      ElMessage.success(`已选择检查子类为${examSubclass}、检查项目为${itemName}的记录`);
+    } else {
+      isSelected.value = false;
+      ElMessage.warning('请选择胃镜或肠镜检查类型');
+    }
   } else {
-    isSelected.value = false;
-    ElMessage.warning('请选择胃镜或肠镜检查类型');
+    // 双选逻辑 - 允许选择任何检查类型
+    // const isGastroscopy = curentRow.examSubclass.includes('胃镜') || curentRow.itemName.includes('胃镜');
+    // const isColonoscopy = curentRow.examSubclass.includes('肠镜') || curentRow.itemName.includes('肠镜');
+
+    // if (!isGastroscopy && !isColonoscopy) {
+    //   ElMessage.warning('请选择胃镜或肠镜检查类型');
+    //   return;
+    // }
+
+    // 检查是否已经选择过该条数据
+    if (selectedData1.value && selectedData1.value.examNo === curentRow.examNo) {
+      // 如果已经选择为①，则取消选择①
+      cancelSelection(1);
+      return;
+    }
+    if (selectedData2.value && selectedData2.value.examNo === curentRow.examNo) {
+      // 如果已经选择为②，则取消选择②
+      cancelSelection(2);
+      return;
+    }
+
+    // 分配选择序号
+    if (!selectedData1.value) {
+      selectedData1.value = { ...curentRow };
+      curentRow.markNumber = '①';
+      ElMessage.success(`已选择①: ${curentRow.name} (${curentRow.examClass})`);
+    } else if (!selectedData2.value) {
+      selectedData2.value = { ...curentRow };
+      curentRow.markNumber = '②';
+      ElMessage.success(`已选择②: ${curentRow.name} (${curentRow.examClass})`);
+    } else {
+      ElMessage.warning('已选择两条记录，请先取消其中一条');
+      return;
+    }
+
+    // 更新选择状态 - 检查是否两条都是胃肠镜
+    if (selectedData1.value && selectedData2.value) {
+      const isGastroscopy1 =
+        selectedData1.value.examSubclass.includes('胃镜') || selectedData1.value.itemName.includes('胃镜');
+      const isColonoscopy1 =
+        selectedData1.value.examSubclass.includes('肠镜') || selectedData1.value.itemName.includes('肠镜');
+      const isGastroscopy2 =
+        selectedData2.value.examSubclass.includes('胃镜') || selectedData2.value.itemName.includes('胃镜');
+      const isColonoscopy2 =
+        selectedData2.value.examSubclass.includes('肠镜') || selectedData2.value.itemName.includes('肠镜');
+
+      const isBothGastrointestinal = (isGastroscopy1 || isColonoscopy1) && (isGastroscopy2 || isColonoscopy2);
+      isSelected.value = isBothGastrointestinal;
+    } else {
+      isSelected.value = false;
+    }
   }
 };
+
+// 取消选择
+const cancelSelection = (number: number) => {
+  if (number === 1) {
+    if (selectedData1.value) {
+      // 清除标记
+      const row = searchData.value.find((item) => item.examNo === selectedData1.value.examNo);
+      if (row) {
+        row.markNumber = '';
+      }
+      selectedData1.value = null;
+      ElMessage.info('已取消选择①');
+    }
+  } else if (number === 2) {
+    if (selectedData2.value) {
+      // 清除标记
+      const row = searchData.value.find((item) => item.examNo === selectedData2.value.examNo);
+      if (row) {
+        row.markNumber = '';
+      }
+      selectedData2.value = null;
+      ElMessage.info('已取消选择②');
+    }
+  }
+
+  // 清除表格当前选中行的指针
+  nextTick(() => {
+    const table = document.querySelector('.el-table') as any;
+    if (table && table.clearCurrentRow) {
+      table.clearCurrentRow();
+    }
+  });
+
+  // 重新计算选择状态
+  if (selectedData1.value && selectedData2.value) {
+    const isGastroscopy1 =
+      selectedData1.value.examSubclass.includes('胃镜') || selectedData1.value.itemName.includes('胃镜');
+    const isColonoscopy1 =
+      selectedData1.value.examSubclass.includes('肠镜') || selectedData1.value.itemName.includes('肠镜');
+    const isGastroscopy2 =
+      selectedData2.value.examSubclass.includes('胃镜') || selectedData2.value.itemName.includes('胃镜');
+    const isColonoscopy2 =
+      selectedData2.value.examSubclass.includes('肠镜') || selectedData2.value.itemName.includes('肠镜');
+
+    const isBothGastrointestinal = (isGastroscopy1 || isColonoscopy1) && (isGastroscopy2 || isColonoscopy2);
+    isSelected.value = isBothGastrointestinal;
+  } else {
+    isSelected.value = false;
+  }
+};
+
+// 监听组合号②开关变化
+watch(enableLensCode2, (newVal, oldVal) => {
+  // 只有在开关状态真正改变时才清空数据
+  if (oldVal !== undefined) {
+    // 避免初始化时触发
+    if (!newVal) {
+      // 关闭开关时清空双选数据
+      selectedData1.value = null;
+      selectedData2.value = null;
+      isSelected.value = false;
+      // 清除所有标记
+      searchData.value.forEach((item) => {
+        item.markNumber = '';
+      });
+    }
+    // 开启开关时不清除数据，保持现有选择状态
+  }
+});
+
+// 监听选择数据变化，实时更新按钮状态
+watch(
+  [selectedData1, selectedData2],
+  () => {
+    // 实时检查双选状态
+    if (selectedData1.value && selectedData2.value) {
+      const isGastroscopy1 =
+        selectedData1.value.examSubclass.includes('胃镜') || selectedData1.value.itemName.includes('胃镜');
+      const isColonoscopy1 =
+        selectedData1.value.examSubclass.includes('肠镜') || selectedData1.value.itemName.includes('肠镜');
+      const isGastroscopy2 =
+        selectedData2.value.examSubclass.includes('胃镜') || selectedData2.value.itemName.includes('胃镜');
+      const isColonoscopy2 =
+        selectedData2.value.examSubclass.includes('肠镜') || selectedData2.value.itemName.includes('肠镜');
+
+      const isBothGastrointestinal = (isGastroscopy1 || isColonoscopy1) && (isGastroscopy2 || isColonoscopy2);
+      isSelected.value = isBothGastrointestinal;
+    } else {
+      isSelected.value = false;
+    }
+  },
+  { immediate: true }
+);
 
 // 点击添加
 const add = () => {
@@ -498,6 +720,8 @@ const add = () => {
   forceSubmitCount.value = 0; // 重置强制提交计数
   enableLensCode2.value = false; // 重置组合号②开关
   ruleForm.ip_and_lensCode2 = ''; // 清空组合号②
+  selectedData1.value = null; // 清空选择数据
+  selectedData2.value = null; // 清空选择数据
   conRecordDialog.value = true;
 };
 
@@ -571,7 +795,44 @@ const update = async (formEl: FormInstance | undefined) => {
           const data = removeInvalid(ruleForm);
           data.forceInsert = true;
           if (!enableLensCode2.value) data.ip_and_lensCode2 = null;
-          await conRecord.save(data);
+
+          // 如果是双选模式，封装两份数据
+          if (enableLensCode2.value && selectedData1.value && selectedData2.value) {
+            const dataList = [
+              {
+                ...data,
+                ip_and_lensCode: ruleForm.ip_and_lensCode,
+                ip_and_lensCode2: null,
+                examNo: selectedData1.value.examNo,
+                patLocalid: selectedData1.value.patLocalid,
+                name: selectedData1.value.name,
+                examClass: selectedData1.value.examClass,
+                examSubclass: selectedData1.value.examSubclass,
+                itemName: selectedData1.value.itemName,
+                staffName: selectedData1.value.staffName,
+                examTime: selectedData1.value.examTime,
+                isAbnormal: selectedData1.value.isAbnoraml,
+              },
+              {
+                ...data,
+                ip_and_lensCode: ruleForm.ip_and_lensCode2,
+                ip_and_lensCode2: null,
+                examNo: selectedData2.value.examNo,
+                patLocalid: selectedData2.value.patLocalid,
+                name: selectedData2.value.name,
+                examClass: selectedData2.value.examClass,
+                examSubclass: selectedData2.value.examSubclass,
+                itemName: selectedData2.value.itemName,
+                staffName: selectedData2.value.staffName,
+                examTime: selectedData2.value.examTime,
+                isAbnormal: selectedData2.value.isAbnoraml,
+              },
+            ];
+            await conRecord.saveBatch(dataList);
+          } else {
+            const dataList = [data];
+            await conRecord.saveBatch(dataList);
+          }
           await getList();
           isModify.value = false;
           isSearch.value = false;
@@ -587,7 +848,7 @@ const update = async (formEl: FormInstance | undefined) => {
       }
       lastSubmitTime.value = currentTime;
 
-      ElMessage.error('请先查询并选择胃镜或肠镜检查类型');
+      ElMessage.error('请优先查询并选择胃镜或肠镜检查类型');
       dialogLoad.value = false;
       return;
     }
@@ -595,7 +856,44 @@ const update = async (formEl: FormInstance | undefined) => {
     // 正常提交逻辑
     const data = removeInvalid(ruleForm);
     if (!enableLensCode2.value) data.ip_and_lensCode2 = null;
-    await conRecord.save(data);
+
+    // 如果是双选模式，封装两份数据
+    if (enableLensCode2.value && selectedData1.value && selectedData2.value) {
+      const dataList = [
+        {
+          ...data,
+          ip_and_lensCode: ruleForm.ip_and_lensCode,
+          ip_and_lensCode2: null,
+          examNo: selectedData1.value.examNo,
+          patLocalid: selectedData1.value.patLocalid,
+          name: selectedData1.value.name,
+          examClass: selectedData1.value.examClass,
+          examSubclass: selectedData1.value.examSubclass,
+          itemName: selectedData1.value.itemName,
+          staffName: selectedData1.value.staffName,
+          examTime: selectedData1.value.examTime,
+          isAbnormal: selectedData1.value.isAbnoraml,
+        },
+        {
+          ...data,
+          ip_and_lensCode: ruleForm.ip_and_lensCode2,
+          ip_and_lensCode2: null,
+          examNo: selectedData2.value.examNo,
+          patLocalid: selectedData2.value.patLocalid,
+          name: selectedData2.value.name,
+          examClass: selectedData2.value.examClass,
+          examSubclass: selectedData2.value.examSubclass,
+          itemName: selectedData2.value.itemName,
+          staffName: selectedData2.value.staffName,
+          examTime: selectedData2.value.examTime,
+          isAbnormal: selectedData2.value.isAbnoraml,
+        },
+      ];
+      await conRecord.saveBatch(dataList);
+    } else {
+      const dataList = [data];
+      await conRecord.saveBatch(dataList);
+    }
     await getList();
     isModify.value = false;
     isSearch.value = false;
@@ -681,16 +979,25 @@ const reset = () => {
   listQuery.size = 15;
   getList();
 };
+
+// 判断是否为胃肠镜数据
+const isGastrointestinalData = (data: any) => {
+  const isGastroscopy = data.examSubclass.includes('胃镜') || data.itemName.includes('胃镜');
+  const isColonoscopy = data.examSubclass.includes('肠镜') || data.itemName.includes('肠镜');
+  return isGastroscopy || isColonoscopy;
+};
 </script>
 
 <style lang="scss" scoped>
 header {
   font-weight: 500;
   font-size: 18px;
+
   .sub-title {
     margin: 20px 15px;
     font-size: 14px;
     color: #606266;
+
     .el-icon {
       position: relative;
       top: 2px;
@@ -699,6 +1006,7 @@ header {
     }
   }
 }
+
 .container {
   padding: 20px;
   width: 96.7%;
@@ -706,51 +1014,63 @@ header {
   background: #ffffff;
   box-shadow: 0px 8px 16px rgba(0, 0, 0, 0.1);
   border-radius: 24px;
+
   .title-box {
     display: flex;
     justify-content: space-between;
+
     .title {
       font-weight: 500;
       font-size: 22px;
       line-height: 30px;
       font-feature-settings: 'tnum' on, 'lnum' on;
       color: #303133;
+
       .ab-select {
         margin: 0 20px;
         width: 100px;
       }
     }
+
     .border-btn {
       border: 1px solid #e4e7ed;
     }
   }
+
   .content-box {
     .title-row {
       margin: 20px 0;
     }
+
     .text {
       color: #409eff;
+
       &:hover {
         cursor: pointer;
       }
     }
   }
 }
+
 .dialog-title {
   display: flex;
   justify-content: space-between;
   padding: 0 20px;
+
   .text {
     font-size: 18px;
     line-height: 44px;
   }
+
   .card-num {
     margin-right: 35px;
   }
+
   .el-icon {
     padding-right: 18px;
   }
 }
+
 .form {
   padding: 0 16px;
   padding-top: 24px;
@@ -758,8 +1078,10 @@ header {
 
 .operate-btn {
   color: #409eff;
+
   span {
     padding-left: 10px;
+
     &:hover {
       cursor: pointer;
     }
@@ -795,5 +1117,39 @@ header {
   background-color: #f0f9ff;
   padding: 2px 6px;
   border-radius: 3px;
+}
+
+.mark-number {
+  color: #ff4757;
+  font-weight: bold;
+  background-color: #ffeaa7;
+  padding: 2px 6px;
+  border-radius: 3px;
+  margin-left: 5px;
+}
+
+.selection-status {
+  display: flex;
+  gap: 20px;
+  align-items: center;
+}
+
+.status-item {
+  padding: 8px 12px;
+  border-radius: 4px;
+  background-color: #f5f5f5;
+  border: 1px solid #ddd;
+
+  &.selected {
+    background-color: #e8f5e8;
+    border-color: #67c23a;
+    color: #67c23a;
+  }
+
+  &.nonGastro {
+    background-color: #fff3cd;
+    border-color: #ffc107;
+    color: #856404;
+  }
 }
 </style>
