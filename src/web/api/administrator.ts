@@ -13,6 +13,10 @@ const administrator = {
   remove(id: number) {
     return request.post(`/sys/remove?id=${id}`);
   },
+  // 修改密码
+  updatePassword(data: any) {
+    return request.post('/sys/updatePassword', data);
+  },
 };
 
 export default administrator;

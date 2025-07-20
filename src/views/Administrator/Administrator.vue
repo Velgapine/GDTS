@@ -29,10 +29,11 @@
             <span v-else>员工</span>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="80px">
+        <el-table-column label="操作" width="180px">
           <template #default="{ row }">
             <div class="operate-btn">
               <span v-if="checkAuthority(row.user_name)" @click="remove(row.id)">删除</span>
+              <span v-if="isAdminUser" @click="showChangePassword(row)">修改密码</span>
             </div>
           </template>
         </el-table-column>
@@ -74,6 +75,50 @@
       </el-row>
     </el-form>
   </el-dialog>
+
+  <!-- 修改密码弹窗 -->
+  <el-dialog v-model="passwordDialog" title="修改密码" width="40%">
+    <el-form
+      ref="passwordFormRef"
+      :model="passwordForm"
+      :rules="passwordRules"
+      label-position="left"
+      label-width="100px"
+      size="large"
+      class="form"
+    >
+      <el-form-item label="用户名：">
+        <el-input v-model="passwordForm.userName" disabled style="width: 350px" />
+      </el-form-item>
+      <el-form-item label="新密码：" prop="newPassword">
+        <el-input
+          v-model="passwordForm.newPassword"
+          type="password"
+          placeholder="请输入新密码"
+          style="width: 350px"
+          show-password
+        />
+      </el-form-item>
+      <el-form-item label="确认密码：" prop="confirmPassword">
+        <el-input
+          v-model="passwordForm.confirmPassword"
+          type="password"
+          placeholder="请再次输入新密码"
+          style="width: 350px"
+          show-password
+        />
+      </el-form-item>
+      <el-row justify="center">
+        <my-btn
+          color="linear-gradient(180deg, #38F9D6 0%, #3EF0A4 59.17%, #6DEE99 100%)"
+          @click="updatePassword(passwordFormRef)"
+        >
+          确认修改
+        </my-btn>
+        <my-btn color="#fff" style="border: 1px solid #e4e7ed" @click="passwordDialog = false"> 取消 </my-btn>
+      </el-row>
+    </el-form>
+  </el-dialog>
 </template>
 
 <script lang="ts" setup>
@@ -83,8 +128,14 @@ import adm from '@/web/api/administrator';
 import removeInvalid from '@/utils/removeInvalid';
 import initForm from '@/utils/initForm';
 import confirm from '@/utils/confirm';
+import CryptoJS from 'crypto-js';
 
 const { username } = useStore().state;
+
+// 判断是否为admin用户
+const isAdminUser = computed(() => {
+  return username === 'admin';
+});
 
 // 获取管理员列表的查询字符串对象
 const listQuery = reactive({
@@ -153,11 +204,86 @@ const getList = async () => {
 
 // 判断该用户是否能进行删除操作
 const checkAuthority = (rowName: string) => {
-  let list = ['Administrator', 'admin', 'visitor', username];
+  let list = ['admin'];
   for (let name of list) {
     if (rowName === name) return false;
   }
   return true;
+};
+
+// 修改密码相关
+const passwordDialog = ref(false);
+const passwordFormRef = ref<FormInstance>();
+const passwordForm = reactive({
+  userId: '',
+  userName: '',
+  newPassword: '',
+  confirmPassword: '',
+});
+
+const passwordRules = reactive<FormRules>({
+  newPassword: [
+    { required: true, message: '请输入新密码', trigger: 'blur' },
+    { min: 6, message: '密码长度不能少于6位', trigger: 'blur' },
+  ],
+  confirmPassword: [
+    { required: true, message: '请确认密码', trigger: 'blur' },
+    {
+      validator: (rule: any, value: string, callback: any) => {
+        if (value !== passwordForm.newPassword) {
+          callback(new Error('两次输入的密码不一致'));
+        } else {
+          callback();
+        }
+      },
+      trigger: 'blur',
+    },
+  ],
+});
+
+// 显示修改密码弹窗
+const showChangePassword = (row: any) => {
+  passwordForm.userId = row.id;
+  passwordForm.userName = row.user_name;
+  passwordForm.newPassword = '';
+  passwordForm.confirmPassword = '';
+  passwordDialog.value = true;
+};
+
+// 修改密码
+const updatePassword = async (formEl: FormInstance | undefined) => {
+  try {
+    if (!formEl) return;
+    await formEl.validate();
+
+    const data = {
+      username: passwordForm.userName,
+      newPassword: CryptoJS.MD5(passwordForm.newPassword).toString().toUpperCase(),
+      confirmPassword: CryptoJS.MD5(passwordForm.confirmPassword).toString().toUpperCase(),
+    };
+
+    const response = await adm.updatePassword(data);
+
+    // 调试：打印响应数据
+    console.log('修改密码响应:', response);
+    const res = response.data ?? response;
+    // 检查响应状态码
+    if (res.code !== 4000) {
+      ElMessage.error(res.msg || '密码修改失败');
+      return;
+    }
+    // ElMessage.success('密码修改成功'); // 移除本地成功提示，交由全局拦截器处理
+    passwordDialog.value = false;
+
+    // 清空表单
+    passwordForm.userId = '';
+    passwordForm.userName = '';
+    passwordForm.newPassword = '';
+    passwordForm.confirmPassword = '';
+  } catch (e) {
+    console.log('修改密码异常:', e);
+    ElMessage.error('密码修改失败');
+  }
 };
 </script>
 
