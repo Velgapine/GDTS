@@ -41,7 +41,8 @@
     <div class="content-box">
       <!-- 洗消表格 -->
       <el-table v-loading="tableLoad" :data="recordList.data">
-        <el-table-column prop="scopeName" label="胃镜名称" />
+        <el-table-column prop="scopeName" label="内镜名称" />
+        <el-table-column prop="name" label="病人姓名" />
         <el-table-column label="状态">
           <template #default="{ row }">
             <span v-if="row.state === 1">已结束</span>
