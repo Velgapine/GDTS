@@ -4,7 +4,7 @@
       <div class="step-card">
         <div class="inf">
           <div class="step" @click="stepDialog = true">
-            <el-icon size="22px"><Setting /></el-icon>步骤：
+            <el-icon size="22px"> <Setting /> </el-icon>步骤：
           </div>
         </div>
         <div class="show">
@@ -25,6 +25,10 @@
           <div class="name">{{ item.scopeName }}</div>
           <div v-if="item.name" class="patient">病人：{{ item.name }}</div>
           <div class="date">{{ item.beginTime }}</div>
+          <div v-if="machineWashTimes[item.scopeId]" class="machine-time">
+            <span style="color: #409eff">机洗已用：</span
+            ><span style="color: #409eff">{{ machineWashTimes[item.scopeId] }}</span>
+          </div>
         </div>
         <div class="show">
           <div class="table">
@@ -78,24 +82,90 @@ import { Setting, Plus } from '@element-plus/icons-vue';
 import record from '@/web/api/washRecord';
 import flowStep from '@/web/api/flowStep';
 import confirm from '@/utils/confirm';
+import { watch } from 'vue';
 
 const load = ref(false);
 const dialogLoad = ref(false);
 
 const stepDialog = ref(false); // 是否显示洗消步骤弹窗
 
+// 新增：机洗时间map
+const machineWashTimes = ref<Record<string, string>>({});
+let timer: any = null;
+let dataTimer: any = null; // 新增：定时请求数据
+
 // 定时器
-let timer = setInterval(() => {
-  getList();
-}, 5000);
+function startTimer() {
+  if (timer) clearInterval(timer);
+  timer = setInterval(() => {
+    if (list.value) {
+      list.value.forEach(async (item: any) => {
+        if (item.isMachineWash && item.beginTime && item.scopeId) {
+          // 机洗时间逻辑（仿）
+          // if (item.beginTime && item.scopeId) {
+          let start = Date.parse(item.beginTime.replace(/-/g, '/'));
+          if (isNaN(start)) start = new Date(item.beginTime).getTime();
+          if (!isNaN(start)) {
+            const now = Date.now();
+            let diff = Math.floor((now - start) / 1000);
+            const h = String(Math.floor(diff / 3600)).padStart(2, '0');
+            const m = String(Math.floor((diff % 3600) / 60)).padStart(2, '0');
+            const s = String(diff % 60).padStart(2, '0');
+            machineWashTimes.value[item.scopeId] = `${h}:${m}:${s}`;
+          } else {
+            delete machineWashTimes.value[item.scopeId];
+          }
+        }
+        // 干燥自动结束逻辑
+        if (item.step && Array.isArray(item.step)) {
+          const dryStepIndex = stepList.value.findIndex((s) => s.name && s.name.includes('干燥'));
+          if (dryStepIndex !== -1 && item.step[dryStepIndex]) {
+            const dryStep = item.step[dryStepIndex];
+            // 干燥步骤已开始且未结束（state===1为进行中）
+            if (dryStep.time && dryStep.state === 1) {
+              // 干燥开始时间（假设格式为 'YYYY-MM-DD HH:mm:ss'）
+              let dryStart = Date.parse(dryStep.time.replace(/-/g, '/'));
+              if (isNaN(dryStart)) dryStart = new Date(dryStep.time).getTime();
+              if (!isNaN(dryStart)) {
+                const now = Date.now();
+                let dryDiff = Math.floor((now - dryStart) / 1000);
+                if (dryDiff >= 180 && !item._dryAutoFinish) {
+                  item._dryAutoFinish = true; // 防止多次触发
+                  try {
+                    await record.update({ scopeId: item.scopeId, state: 2 });
+                    ElMessage.success('干燥已满180秒，流程已自动结束');
+                  } catch (e) {
+                    console.log('自动结束流程失败', e);
+                  }
+                }
+              }
+            }
+          }
+        }
+      });
+      // 调试：打印机洗时间map
+      console.log('机洗时间map:', machineWashTimes.value);
+    }
+  }, 1000);
+}
+
+function startDataTimer() {
+  if (dataTimer) clearInterval(dataTimer);
+  dataTimer = setInterval(() => {
+    getList();
+  }, 5000);
+}
 
 onMounted(async () => {
   await getStepList();
   await getList();
+  startTimer();
+  startDataTimer(); // 启动数据刷新定时器
 });
 
 onUnmounted(() => {
   clearInterval(timer);
+  clearInterval(dataTimer);
 });
 
 // 洗消步骤管理
@@ -162,33 +232,23 @@ const getList = async () => {
         step: { serial: number; time: string; state: number }[];
         beginTime: string;
         isMachineWash: boolean;
+        scopeId: string;
       }) => {
-        // 确认正在执行的数据 (第一个undefined以前的数据)
-        const step = item.step; // 旧的step
-        item.beginTime = step[0].time.slice(0, 11); // 记录流程起始时间
-        const isMachine = item.isMachineWash; // 是否为机洗
-        let arr = []; // 新的step数组（为了方便完整显示）
-        let len = step.length; // 旧的step的长度（可以不为6）
-        const first = step[0].serial; // 记录起始步骤的serial
-        const last = step[len - 1].serial; // 记录最后步骤的serial
-        /*
-         * state：number
-         * 0:已结束
-         * 1：进行中
-         * -1： 未开始
-         * 2：跳过
-         * 3：机洗中省略的步骤
-         */
-        // stepList为固定5长度的数组
+        // 保留完整的 beginTime
+        const step = item.step;
+        item.beginTime = step[0].time; // 不再 slice(0, 11)，保留完整时间
+        const isMachine = item.isMachineWash;
+        let arr = [];
+        let len = step.length;
+        const first = step[0].serial;
+        const last = step[len - 1].serial;
         for (let i = 1; i <= stepList.value.length; i++) {
-          // 先全部设置成未开始（默认情况）
           arr[i - 1] = {
             serial: i,
             time: '',
             state: -1,
           };
           step.forEach((obj: { serial: number; time: string }) => {
-            // 有的步骤则赋值
             if (i === obj.serial) {
               arr[i - 1] = {
                 serial: obj.serial,
@@ -197,16 +257,13 @@ const getList = async () => {
               };
             }
           });
-          // 不在头和尾，时间还为空则为跳过步骤
           if (i < last && arr[i - 1].time === '') {
             arr[i - 1].state = 2;
           }
-          // 机洗步骤的省略步骤
           if (isMachine && i > first && i < last) {
             arr[i - 1].state = 3;
             arr[i - 1].time = '';
           }
-          // 最后一步为正在进行中的步骤
           i === last && (arr[last - 1].state = 1);
         }
         item.step = arr;
@@ -233,16 +290,38 @@ const toSingle = (scopeId: string, scopeName: string, matchId: string) => {
     },
   });
 };
+
+watch(
+  list,
+  (val) => {
+    console.log('监控数据:', val);
+    if (Array.isArray(val)) {
+      val.forEach((item, idx) => {
+        console.log(
+          `item[${idx}]: scopeId=`,
+          item.scopeId,
+          'beginTime=',
+          item.beginTime,
+          'isMachineWash=',
+          item.isMachineWash
+        );
+      });
+    }
+  },
+  { immediate: true, deep: true }
+);
 </script>
 
 <style lang="scss" scoped>
 header {
   font-weight: 500;
   font-size: 18px;
+
   .title {
     margin-bottom: 20px;
   }
 }
+
 .container {
   padding: 20px;
   width: 96.7%;
@@ -250,6 +329,7 @@ header {
   background: #ffffff;
   box-shadow: 0px 8px 16px rgba(0, 0, 0, 0.1);
   border-radius: 24px;
+
   .content-box {
     .monitor-card {
       display: flex;
@@ -262,32 +342,40 @@ header {
       border: 1px solid #ebeef5;
       box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
       border-radius: 24px;
+
       &:hover {
         cursor: pointer;
       }
+
       .inf {
         display: flex;
         width: 10%;
         flex-direction: column;
         align-items: center;
         margin-right: 2%;
+        color: #000;
         div {
           font-size: 22px;
           font-weight: 700;
+          color: #000;
         }
         .name {
           font-size: 26px;
           padding-bottom: 20px;
+          color: #000;
         }
       }
+
       .show {
         display: flex;
         flex-direction: column;
         width: 85%;
+
         .table {
           display: flex;
           justify-content: space-between;
           width: 100%;
+
           .time {
             width: 145.438px;
             height: 80px;
@@ -297,27 +385,31 @@ header {
             font-size: 20px;
             border-radius: 5px;
           }
+
           .finish {
             background: linear-gradient(180deg, #38f9d6 0%, #3ef0a4 59.17%, #6dee99 100%);
           }
+
           .skip {
             background: #d0cece;
           }
+
           .ing {
             background: yellow;
           }
+
           .mach {
             background: #409eff;
           }
         }
       }
     }
+
     .blueName {
-      color: #fff;
-      background: #409eff;
-      padding: 6px 0;
-      border-radius: 5px;
+      color: #409eff;
+      font-weight: bold;
     }
+
     .step-card {
       display: flex;
       align-items: center;
@@ -329,34 +421,41 @@ header {
       border: 1px solid #ebeef5;
       box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
       border-radius: 18px;
+
       .inf {
         display: flex;
         width: 10%;
         flex-direction: column;
         align-items: center;
         margin-right: 2%;
+
         .step {
           font-weight: 600;
           font-size: 18px;
+
           .el-icon {
             position: relative;
             top: 4px;
             padding-right: 5px;
           }
+
           &:hover {
             cursor: pointer;
             color: #409eff;
           }
         }
       }
+
       .show {
         display: flex;
         flex-direction: column;
         width: 85%;
+
         .table {
           display: flex;
           justify-content: space-between;
           width: 100%;
+
           .name {
             width: 145.438px;
             text-align: center;
@@ -371,6 +470,7 @@ header {
 
 .el-dialog {
   position: relative !important;
+
   .add-btn {
     position: absolute;
     right: 20px;
@@ -380,11 +480,20 @@ header {
 
 .operate-btn {
   color: #409eff;
+
   span {
     padding-left: 10px;
+
     &:hover {
       cursor: pointer;
     }
   }
+}
+
+.machine-time {
+  color: #409eff;
+  font-size: 18px;
+  font-weight: bold;
+  margin-top: 8px;
 }
 </style>

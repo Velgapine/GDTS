@@ -25,4 +25,8 @@ export default {
   getByStaffName(name: string) {
     return request.get('/washRecord/staffName', { staffName: name });
   },
+  // 新增：流程状态更新
+  update(data: any) {
+    return request.post('/washRecord/update', data);
+  },
 };
