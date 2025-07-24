@@ -36,13 +36,13 @@
               <div
                 class="time"
                 :class="{
-                  finish: e.state === 0,
-                  ing: e.state === 1,
+                  ing: e.state === 0,
+                  finish: e.state === 1,
                   skip: e.state === 2,
                   mach: e.state === 3,
                 }"
               >
-                {{ e.time !== '' ? e.time : e.time }}
+                {{ e.time || '--:--:--' }}
               </div>
             </div>
           </div>
@@ -121,8 +121,8 @@ function startTimer() {
           const dryStepIndex = stepList.value.findIndex((s) => s.name && s.name.includes('干燥'));
           if (dryStepIndex !== -1 && item.step[dryStepIndex]) {
             const dryStep = item.step[dryStepIndex];
-            // 干燥步骤已开始且未结束（state===1为进行中）
-            if (dryStep.time && dryStep.state === 1) {
+            // 干燥步骤已开始且未结束（state===0为进行中）
+            if (dryStep.time && dryStep.state === 0) {
               // 干燥开始时间（假设格式为 'YYYY-MM-DD HH:mm:ss'）
               let dryStart = Date.parse(dryStep.time.replace(/-/g, '/'));
               if (isNaN(dryStart)) dryStart = new Date(dryStep.time).getTime();
@@ -132,7 +132,7 @@ function startTimer() {
                 if (dryDiff >= 180 && !item._dryAutoFinish) {
                   item._dryAutoFinish = true; // 防止多次触发
                   try {
-                    await record.update({ scopeId: item.scopeId, state: 2 });
+                    await record.update({ scopeId: item.scopeId, state: 1 });
                     ElMessage.success('干燥已满180秒，流程已自动结束');
                   } catch (e) {
                     console.log('自动结束流程失败', e);
@@ -238,33 +238,43 @@ const getList = async () => {
         const step = item.step;
         item.beginTime = step[0].time; // 不再 slice(0, 11)，保留完整时间
         const isMachine = item.isMachineWash;
+
+        if (!step || step.length === 0) {
+          item.step = [];
+          return item;
+        }
+
         let arr = [];
-        let len = step.length;
-        const first = step[0].serial;
-        const last = step[len - 1].serial;
+        const len = step.length;
+        const firstSerial = step[0].serial;
+        const lastSerial = step[len - 1].serial;
+
+        const stepMap = new Map();
+        step.forEach((s) => stepMap.set(s.serial, s.time || ''));
+
         for (let i = 1; i <= stepList.value.length; i++) {
-          arr[i - 1] = {
-            serial: i,
-            time: '',
-            state: -1,
-          };
-          step.forEach((obj: { serial: number; time: string }) => {
-            if (i === obj.serial) {
-              arr[i - 1] = {
-                serial: obj.serial,
-                time: obj.time.slice(11),
-                state: 0,
-              };
+          const time = stepMap.get(i);
+          if (time !== undefined) {
+            if (i === lastSerial) {
+              arr.push({ serial: i, time: time.slice(11), state: 0 });
+            } else {
+              arr.push({ serial: i, time: time.slice(11), state: 1 });
+            }
+          } else {
+            if (i < lastSerial) {
+              arr.push({ serial: i, time: '', state: 2 });
+            } else {
+              arr.push({ serial: i, time: '', state: -1 });
+            }
+          }
+        }
+
+        if (isMachine) {
+          arr.forEach((s) => {
+            if (s.serial > firstSerial && s.serial < lastSerial) {
+              s.state = 3; // "mach"
             }
           });
-          if (i < last && arr[i - 1].time === '') {
-            arr[i - 1].state = 2;
-          }
-          if (isMachine && i > first && i < last) {
-            arr[i - 1].state = 3;
-            arr[i - 1].time = '';
-          }
-          i === last && (arr[last - 1].state = 1);
         }
         item.step = arr;
         return item;
