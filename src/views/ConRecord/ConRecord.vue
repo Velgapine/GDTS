@@ -931,7 +931,13 @@ const remove = async (id: number) => {
 // 导出记录
 const download = async () => {
   try {
-    const res = await conRecord.excel({});
+    let isAll = false;
+    if (listQuery.isAbnormal === '2') {
+      listQuery.isAbnormal = '';
+      isAll = true;
+    }
+    const res = await conRecord.excel(removeInvalid(listQuery));
+    if (isAll) listQuery.isAbnormal = '2';
     ElMessage.success('下载成功');
     down(res, '诊疗记录.xlsx');
   } catch (e) {

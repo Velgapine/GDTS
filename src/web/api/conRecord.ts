@@ -38,6 +38,8 @@ export default {
   },
   // 导出excel
   excel(data: any) {
-    return request.download('/logExam2/excel', data, 'get');
+    //return request.download('/logExam2/excel', data, 'get');
+    const params = new URLSearchParams(data).toString();
+    return request.download(`/logExam2/excel?${params}`, {}, 'get');
   },
 };
