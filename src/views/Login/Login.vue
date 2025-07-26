@@ -102,15 +102,14 @@ async function login() {
   loading.value = true;
   try {
     let { userName, password, roleId } = form;
-
-    //补上MD5加密,下次前后端开发商量好求你们
     if (isVisitor.value) {
       userName = 'visitor';
       password = '110';
       roleId = 3;
     }
-    password = CryptoJS.MD5(password).toString().toUpperCase();
     //此处删除了密码的md5加密，因为后台已经加密了，所以这里不需要加密
+    //补上MD5加密,下次前后端开发商量好求你们
+    password = CryptoJS.MD5(password).toString().toUpperCase();
     const data = { userName, password, roleId };
     const res = (await user.login(data)) as any;
     console.log(res);
@@ -161,11 +160,8 @@ onMounted(() => {
   } else if (isFirst === 'first') {
     // 初次进入系统
     speak('欢迎使用顺元消毒追溯管理系统');
-    // 自动访客登录
-    isManager.value = false;
-    isVisitor.value = true;
+    // 不再自动访客登录
     store.commit('SET_ISFIRST', 'not first');
-    login();
   }
 });
 </script>

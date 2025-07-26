@@ -45,7 +45,7 @@
         <el-table-column prop="name" label="病人姓名" />
         <el-table-column label="状态">
           <template #default="{ row }">
-            <span v-if="row.state === 1">已结束</span>
+            <span v-if="row.state === 1">已完成</span>
             <span v-else-if="row.state === 0" style="color: #409eff">进行中</span>
             <span v-else style="color: #ff3333">异常</span>
           </template>
@@ -275,7 +275,8 @@ const download = async () => {
     //   finishTime: endTime,
     // } = row;
     // const data = { scopeName, scopeId, staffName, beginTime, endTime };
-    const res = await record.download({});
+    removeInvalid(listQuery);
+    const res = await record.download(toRaw(listQuery));
     ElMessage.success('下载成功');
     down(res, '清洗消毒记录.xlsx');
   } catch (e) {

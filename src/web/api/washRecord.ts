@@ -11,7 +11,9 @@ export default {
   },
   // 下载记录
   download(data: any) {
-    return request.download('/down/excel', data, 'get');
+    // return request.download('/down/excel', data, 'get');
+    const params = new URLSearchParams(data).toString();
+    return request.download(`/down/excel?${params}`, {}, 'get');
   },
   getScopeRecord(data?: any) {
     return request.get('/washRecord/scope', data);
