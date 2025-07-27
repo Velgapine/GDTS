@@ -14,6 +14,9 @@
     <div class="title-box">
       <div class="title">洗消记录</div>
       <div class="btn-group">
+        <my-btn color="linear-gradient(180deg, #409eff 50%)" @click="generateSummary"
+          >同步记录</my-btn
+        >
         <my-btn color="linear-gradient(180deg, #38F9D6 0%, #3EF0A4 59.17%, #6DEE99 100%)" @click="download"
           >导出记录</my-btn
         >
@@ -191,6 +194,7 @@
 <script lang="ts" setup>
 import { ArrowRight } from '@element-plus/icons-vue';
 import type { FormInstance, FormRules } from 'element-plus';
+import { ElMessage } from 'element-plus';
 import record from '@/web/api/washRecord';
 import removeInvalid from '@/utils/removeInvalid';
 import initForm from '@/utils/initForm';
@@ -262,6 +266,21 @@ const getMatch = async (id: string) => {
     console.log(e);
   }
   tableLoad.value = false;
+};
+
+// 同步汇总记录
+const generateSummary = async () => {
+  try {
+    await record.generateSummary();
+    // if (data.code === 4000) {
+    //   ElMessage.success('洗消记录汇总生成成功');
+    // } else {
+    //   ElMessage.error(data.message || '汇总生成失败');
+    // }
+  } catch (e) {
+    console.error('同步汇总记录失败:', e);
+    // ElMessage.error('同步汇总记录失败');
+  }
 };
 
 // 下载记录的excel

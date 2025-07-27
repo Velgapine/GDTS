@@ -3,7 +3,7 @@ import request from '@/web/utils';
 export default {
   // 分页查询
   getList(data: any) {
-    return request.get('/washRecord/list', data);
+    return request.get('/washRecord/listNew', data);
   },
   // 正在洗消中的镜子
   getScopeIng(data: any) {
@@ -13,7 +13,7 @@ export default {
   download(data: any) {
     // return request.download('/down/excel', data, 'get');
     const params = new URLSearchParams(data).toString();
-    return request.download(`/down/excel?${params}`, {}, 'get');
+    return request.download(`/down/excelNew?${params}`, {}, 'get');
   },
   getScopeRecord(data?: any) {
     return request.get('/washRecord/scope', data);
@@ -30,5 +30,9 @@ export default {
   // 新增：流程状态更新
   update(data: any) {
     return request.post('/washRecord/update', data);
+  },
+  // 新增：手动触发洗消记录同步汇总生成
+  generateSummary() {
+    return request.post('/washRecord/generateSummary');
   },
 };

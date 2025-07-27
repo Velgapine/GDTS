@@ -13,7 +13,7 @@
     <div class="title-box">
       <div class="title">医院信息管理</div>
       <div>
-        <my-btn color="#fff" style="border: 1px solid #e4e7ed; margin-right: 10px;" @click="getHospitalList">刷新数据</my-btn>
+        <my-btn color="#fff" style="border: 1px solid #e4e7ed; margin-right: 10px;" @click="refreshData">刷新数据</my-btn>
         <!-- <my-btn color="#fff" style="border: 1px solid #e4e7ed; margin-right: 10px;" @click="testImageUrl">测试图片URL</my-btn> -->
         <my-btn color="linear-gradient(180deg, #38F9D6 0%, #3EF0A4 59.17%, #6DEE99 100%)" @click="add">添加医院信息</my-btn>
       </div>
@@ -70,10 +70,10 @@
           <el-button @click="deleteCurrentLogo" type="danger" size="small">删除当前Logo</el-button>
         </div>
       </el-form>
-              <template #footer>
-          <el-button @click="cancelDialog">取消</el-button>
-          <el-button type="primary" @click="save" :loading="saveLoading">保存</el-button>
-        </template>
+      <template #footer>
+        <el-button @click="cancelDialog">取消</el-button>
+        <el-button type="primary" @click="save" :loading="saveLoading">保存</el-button>
+      </template>
     </el-dialog>
   </div>
 </template>
@@ -81,6 +81,7 @@
 import { ArrowRight, Plus } from '@element-plus/icons-vue';
 import { ref, onMounted, reactive, watch, computed } from 'vue';
 import { getHospitalInfo, setHospitalInfo, removeHospitalInfo } from '@/web/utils/hospitalInfo';
+import { fetchHospitalInfo } from '@/web/utils/globalHospitalInfo';
 import hospital from '@/web/api/hospital';
 import type { FormInstance, FormRules } from 'element-plus';
 import { ElMessage, ElMessageBox } from 'element-plus';
@@ -140,12 +141,25 @@ watch(dialogVisible, (newVal) => {
   }
 });
 
+// 刷新数据
+const refreshData = () => {
+  getHospitalList();
+  resetPage();
+};
+
+// 如果需要刷新页面，可以使用下面的代码
+const resetPage = () => {
+  setTimeout(() => {
+    location.reload();
+  }, 300);
+};
+
 // 获取医院信息列表
 const getHospitalList = async () => {
   tableLoad.value = true;
   try {
     const response = await hospital.getList();
-    
+
     // 检查不同的数据结构可能性
     let data = null;
     if (response.data) {
@@ -157,7 +171,7 @@ const getHospitalList = async () => {
     } else {
       data = response;
     }
-    
+
     // 确保数据是数组格式，并且过滤掉无效数据
     if (Array.isArray(data)) {
       // 过滤掉没有name字段的数据
@@ -172,19 +186,20 @@ const getHospitalList = async () => {
     // 如果后端有数据，更新本地缓存
     if (hospitalList.value.length > 0) {
       const firstHospital = hospitalList.value[0];
-      
+
       // 处理Logo URL
       let logoUrl = firstHospital.logoUrl || firstHospital.logo || '';
       if (logoUrl && typeof logoUrl === 'string' && logoUrl.startsWith('/')) {
         // 如果是相对路径，使用API的baseURL拼接完整URL
         logoUrl = baseUrl + logoUrl;
       }
-      
+
       setHospitalInfo({
         name: firstHospital.name || firstHospital.hospitalName || '',
         logoUrl: logoUrl
       });
     }
+
   } catch (error) {
     console.error('获取医院信息失败:', error);
     // ElMessage.error('获取医院信息失败');
@@ -206,7 +221,7 @@ const add = () => {
 const edit = (row: any, idx: number) => {
   // 清理之前的数据
   form.value = { id: null, name: '', logoUrl: '' };
-  
+
   // 只填充医院名称，不填充logo
   form.value = {
     id: row.id,
@@ -230,7 +245,7 @@ const handleLogoChange = async (file: any) => {
   try {
     // 上传Logo到后端
     const response = await hospital.uploadLogo(file.raw);
-    
+
     // 处理返回的Logo路径
     let logoUrl = '';
     if (response.data) {
@@ -246,7 +261,7 @@ const handleLogoChange = async (file: any) => {
         logoUrl = response.data;
       }
     }
-    
+
     form.value.logoUrl = logoUrl;
     // ElMessage.success('Logo上传成功');
   } catch (error) {
@@ -295,14 +310,14 @@ const save = async () => {
 
     // 更新本地缓存
     const hospitalData = response.data || form.value;
-    
+
     // 处理Logo URL
     let logoUrl = hospitalData.logoUrl || hospitalData.logo || '';
     if (logoUrl && typeof logoUrl === 'string' && logoUrl.startsWith('/')) {
       // 如果是相对路径，使用API的baseURL拼接完整URL
       logoUrl = baseUrl + logoUrl;
     }
-    
+
     setHospitalInfo({
       name: hospitalData.name || hospitalData.hospitalName || '',
       logoUrl: logoUrl
@@ -316,7 +331,7 @@ const save = async () => {
         name: hospitalData.name || hospitalData.hospitalName || form.value.name,
         logoUrl: hospitalData.logoUrl || hospitalData.logo || form.value.logoUrl
       };
-      
+
       // 更新表格数据
       if (form.value.id) {
         // 更新模式
@@ -335,11 +350,11 @@ const save = async () => {
     form.value = { id: null, name: '', logoUrl: '' };
     editIndex.value = -1;
 
-    // 不需要立即刷新页面，因为已经更新了本地数据
-    // 如果需要刷新页面，可以取消下面的注释
-    setTimeout(() => {
-      location.reload();
-    }, 300);
+    // 保存成功后，调用全局方法同步医院信息到本地缓存
+    // await fetchHospitalInfo();
+
+    // 如果需要刷新页面，可以使用下面的代码
+    resetPage();
 
   } catch (error) {
     console.error('保存失败:', error);
@@ -366,11 +381,11 @@ const remove = async (id: number) => {
     // 直接从列表中移除，避免重新请求
     hospitalList.value = hospitalList.value.filter(item => item.id !== id);
 
-    // 不需要立即刷新页面，因为已经更新了本地数据
-    // 如果需要刷新页面，可以取消下面的注释
-    setTimeout(() => {
-      location.reload();
-    }, 300);
+    // 删除成功后，调用全局方法同步医院信息到本地缓存
+    // await fetchHospitalInfo();
+
+    // 如果需要刷新页面，可以使用下面的代码
+    resetPage();
 
   } catch (error) {
     if (error !== 'cancel') {
