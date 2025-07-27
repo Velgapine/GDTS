@@ -4,7 +4,7 @@
       <img src="@/assets/img/logo.jpg" class="side-logo" />
       <span v-if="hospitalInfo.name" class="hospital-name">{{ hospitalInfo.name }}</span>
       <span class="product">内镜清洗消毒系统</span>
-      <img v-if="hospitalInfo.logoUrl" :src="hospitalInfo.logoUrl" class="side-logo" />
+      <img v-if="hospitalInfo.logoUrl && hospitalInfo.logoUrl.trim() !== ''" :src="hospitalInfo.logoUrl" class="side-logo" />
       <!-- <img v-else src="@/assets/img/logo.jpg" class="side-logo" /> -->
     </div>
     <div class="right-box">
