@@ -32,6 +32,15 @@ const routes = [
           requireAuth: true,
         },
       },
+      // 医院信息管理
+      {
+        path: 'hospitalInfo',
+        name: 'HospitalInfo',
+        component: () => import('@/views/Hospital/HospitalInfo.vue'),
+        meta: {
+          requireAuth: true,
+        },
+      },
       // 科室管理
       {
         // path: 'hospital/dept',

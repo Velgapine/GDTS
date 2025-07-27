@@ -23,12 +23,8 @@
         </el-select>
       </div>
       <div>
-        <my-btn
-          v-show="!isVisitor"
-          color="linear-gradient(180deg, #38F9D6 0%, #3EF0A4 59.17%, #6DEE99 100%)"
-          @click="download"
-          >导出记录</my-btn
-        >
+        <my-btn v-show="!isVisitor" color="linear-gradient(180deg, #38F9D6 0%, #3EF0A4 59.17%, #6DEE99 100%)"
+          @click="download">导出记录</my-btn>
         <my-btn color="#fff" class="border-btn" @click="add">添加诊疗记录</my-btn>
       </div>
     </div>
@@ -64,20 +60,10 @@
           <el-input v-model="listQuery.staffName" placeholder="请输入医生姓名" clearable @clear="getList" />
         </el-col>
         <el-col :span="5">
-          <el-date-picker
-            v-model="listQuery.beginTime"
-            type="date"
-            placeholder="请选择起始时间"
-            value-format="YYYY-MM-DD"
-          />
+          <el-date-picker v-model="listQuery.beginTime" type="date" placeholder="请选择起始时间" value-format="YYYY-MM-DD" />
         </el-col>
         <el-col :span="5">
-          <el-date-picker
-            v-model="listQuery.endTime"
-            type="date"
-            placeholder="请选择结束时间"
-            value-format="YYYY-MM-DD"
-          />
+          <el-date-picker v-model="listQuery.endTime" type="date" placeholder="请选择结束时间" value-format="YYYY-MM-DD" />
         </el-col>
         <el-col :span="5">
           <el-button type="primary" @click="getList"> 查询 </el-button>
@@ -115,63 +101,35 @@
         </el-table-column>
       </el-table>
       <!-- 分页 -->
-      <my-pagination
-        v-show="!isVisitor"
-        :list-query="listQuery"
-        :loading="tableLoad"
-        :get-list="getList"
-        :total="total"
-      ></my-pagination>
+      <my-pagination v-show="!isVisitor" :list-query="listQuery" :loading="tableLoad" :get-list="getList"
+        :total="total"></my-pagination>
     </div>
   </div>
 
-  <!-- 添加/修改洗消室弹窗 -->
-  <el-dialog
-    v-model="conRecordDialog"
-    v-loading="tableLoad"
-    :title="isModify ? '修改诊疗记录' : '添加诊疗记录'"
-    width="60%"
-  >
-    <el-form
-      ref="ruleFormRef"
-      :model="ruleForm"
-      :rules="rules"
-      label-position="left"
-      label-width="110px"
-      size="large"
-      class="form"
-    >
+  <!-- 添加/修改诊疗记录弹窗 -->
+  <el-dialog v-model="conRecordDialog" v-loading="tableLoad" :title="isModify ? '修改诊疗记录' : '添加诊疗记录'" width="60%">
+    <el-form ref="ruleFormRef" :model="ruleForm" :rules="rules" label-position="left" label-width="110px" size="large"
+      class="form">
       <el-row justify="start">
         <el-col :span="12">
-          <el-form-item :label="isModify ? '修改组合号:' : '组合号①：'" prop="ip_and_lensCode">
-            <el-input v-model="ruleForm.ip_and_lensCode" placeholder="输入示例:192.168.0.1=test" style="width: 350px" />
-            <div v-if="!ruleForm.ip_and_lensCode || !isIpAndLensCodeValid" style="color: red; font-size: 12px">
-              <template v-if="!ruleForm.ip_and_lensCode"> 组合号①必填 </template>
-              <template v-else> 格式不正确，示例：192.168.1.10=test </template>
-            </div>
+          <el-form-item :label="isModify ? '修改组合号:' : '组合号：'" prop="ip_and_lensCode">
+            <el-input v-model="comboInput" placeholder="内镜卡号请用“、”分隔" style="width: 350px" />
+            <div v-if="!comboValid" style="color: red; font-size: 12px">{{ comboError }}</div>
           </el-form-item>
         </el-col>
         <el-col :span="8">
           <el-form-item label="检查唯一号：" prop="examNo">
-            <el-input
-              v-model="ruleForm.examNo"
-              placeholder="输入后请点击查询"
-              style="width: 350px"
-              :disabled="isModify"
-            />
+            <el-input v-model="ruleForm.examNo" placeholder="输入后请点击查询" style="width: 350px" :disabled="isModify" />
             <div v-if="!ruleForm.examNo || !isExamNoValid" style="color: red; font-size: 12px">检查唯一号必填</div>
           </el-form-item>
         </el-col>
-        <el-col :span="4"
-          ><el-button :disabled="isModify" type="success" style="margin-left: 20px" @click="searchHaidong()"
-            >查询</el-button
-          ></el-col
-        >
+        <el-col :span="4"><el-button :disabled="isModify" type="success" style="margin-left: 20px"
+            @click="searchHaidong()">查询</el-button></el-col>
       </el-row>
       <!-- 新增组合号②输入框 -->
-      <el-row v-if="!isModify" justify="start">
+      <!-- <el-row v-if="!isModify" justify="start">
         <el-col :span="12">
-          <el-form-item label="启用组合号②：">
+          <el-form-item label="启用组合号②：" display="false">
             <el-switch v-model="enableLensCode2" />
           </el-form-item>
         </el-col>
@@ -179,32 +137,29 @@
       <el-row v-if="enableLensCode2" justify="start">
         <el-col :span="12">
           <el-form-item :label="isModify ? '修改的组合号②:' : '组合号②：'" prop="ip_and_lensCode2">
-            <el-input
-              v-model="ruleForm.ip_and_lensCode2"
-              placeholder="输入示例:192.168.0.2=test"
-              style="width: 350px"
-            />
+            <el-input v-model="ruleForm.ip_and_lensCode2" placeholder="输入示例:192.168.0.2=test" style="width: 350px" />
             <div v-if="!ruleForm.ip_and_lensCode2 || !isIpAndLensCode2Valid" style="color: red; font-size: 12px">
               <template v-if="!ruleForm.ip_and_lensCode2"> 组合号②必填 </template>
               <template v-else> 格式不正确，示例：192.168.1.10=test </template>
             </div>
           </el-form-item>
         </el-col>
-      </el-row>
+      </el-row> -->
       <!-- 展示查询后的信息 -->
       <el-row v-show="isSearch" justify="center" style="margin-bottom: 20px">
         <!-- <span class="choice-tips">提示：点击表格数据进行选择</span> -->
         <span class="choice-tips">提示：点击表格数据选择胃镜或肠镜检查类型</span>
-        <el-table
-          v-loading="tableLoad"
-          fit
-          border
-          size="small"
-          highlight-current-row
-          :data="searchData"
-          style="width: 100%"
-          @current-change="handleCurrentChange"
-        >
+        <el-table v-loading="tableLoad" fit border size="small" highlight-current-row :data="searchData"
+          style="width: 100%" @row-click="toggleSelectRow" :row-class-name="rowClassName">
+          <el-table-column label="序号" width="60">
+            <template #default="{ row }">
+              <span class="sel-checkbox" :class="{ checked: getRowSelIndex(row) !== '' }">
+                <span v-if="getRowSelIndex(row)" class="sel-index">{{ getRowSelIndex(row) }}</span>
+                <span v-else class="sel-index"></span>
+                <!-- <span v-if="getRowSelIndex(row)" class="sel-check">✔</span> -->
+              </span>
+            </template>
+          </el-table-column>
           <el-table-column label="病人姓名" prop="name"></el-table-column>
           <el-table-column label="病人号" prop="patLocalid"></el-table-column>
           <el-table-column label="检查号" prop="examNo"></el-table-column>
@@ -246,24 +201,20 @@
       </el-row>
       <!-- 状态提示 -->
       <el-row v-if="!isModify" justify="center" style="margin-bottom: 10px">
-        <span class="status-tips" :class="{ success: isSelected, warning: !isSelected }">
+        <!-- <span class="status-tips" :class="{ success: isSelected, warning: !isSelected }">
           {{ isSelected ? '✓ 已选择胃镜或肠镜检查类型，可以点击完成' : '⚠ 请优先查询并选择胃镜或肠镜检查类型' }}
-        </span>
+        </span> -->
       </el-row>
       <!-- 选择状态提示 -->
       <el-row v-if="enableLensCode2 && isSearch" justify="center" style="margin-bottom: 20px">
         <div class="selection-status">
-          <span
-            class="status-item"
-            :class="{ selected: selectedData1, nonGastro: selectedData1 && !isGastrointestinalData(selectedData1) }"
-          >
+          <span class="status-item"
+            :class="{ selected: selectedData1, nonGastro: selectedData1 && !isGastrointestinalData(selectedData1) }">
             选择①: {{ selectedData1 ? `${selectedData1.name} (${selectedData1.examClass})` : '未选择' }}
             <el-button v-if="selectedData1" type="danger" size="small" @click="cancelSelection(1)">取消</el-button>
           </span>
-          <span
-            class="status-item"
-            :class="{ selected: selectedData2, nonGastro: selectedData2 && !isGastrointestinalData(selectedData2) }"
-          >
+          <span class="status-item"
+            :class="{ selected: selectedData2, nonGastro: selectedData2 && !isGastrointestinalData(selectedData2) }">
             选择②: {{ selectedData2 ? `${selectedData2.name} (${selectedData2.examClass})` : '未选择' }}
             <el-button v-if="selectedData2" type="danger" size="small" @click="cancelSelection(2)">取消</el-button>
           </span>
@@ -276,42 +227,26 @@
           :color="isModify || isSelected ? 'linear-gradient(180deg, #38F9D6 0%, #3EF0A4 59.17%, #6DEE99 100%)' : '#dcdfe6'"
           :disabled="!isModify && !isSelected"
           @click="update(ruleFormRef)" -->
-        <my-btn
-          :disabled="
-            !isModify &&
-            (!isSelected ||
-              !isIpAndLensCodeValid ||
-              (enableLensCode2 && !isIpAndLensCode2Valid) ||
-              !isExamNoValid ||
-              !isPatLocalidValid)
-          "
-          :style="{
-            background:
-              isModify || isSelected ? 'linear-gradient(180deg, #38F9D6 0%, #3EF0A4 59.17%, #6DEE99 100%)' : '#dcdfe6',
-            color: isModify || isSelected ? '#fff' : '#a8abb2',
-            border: 'none',
-            marginRight: '32px',
-            cursor: 'pointer',
-            transition: 'all 0.2s ease',
-          }"
-          @click="update(ruleFormRef)"
-        >
+        <my-btn :disabled="!canSubmit" :style="{
+          background: canSubmit ? 'linear-gradient(180deg, #38F9D6 0%, #3EF0A4 59.17%, #6DEE99 100%)' : '#dcdfe6',
+          color: canSubmit ? '#fff' : '#a8abb2',
+          border: 'none',
+          marginRight: '32px',
+          cursor: canSubmit ? 'pointer' : 'not-allowed',
+          transition: 'all 0.2s ease',
+        }" @click="update(ruleFormRef)">
           完成
         </my-btn>
-        <my-btn
-          color="#fff"
-          style="border: 1px solid #e4e7ed"
-          @click="
-            conRecordDialog = false;
-            isSearch = false;
-            isSelected = false;
-            forceSubmitCount = 0;
-            enableLensCode2 = false;
-            ruleForm.ip_and_lensCode2 = '';
-            selectedData1 = null;
-            selectedData2 = null;
-          "
-        >
+        <my-btn color="#fff" style="border: 1px solid #e4e7ed" @click="
+          conRecordDialog = false;
+        isSearch = false;
+        isSelected = false;
+        forceSubmitCount = 0;
+        ruleForm.ip_and_lensCode2 = '';
+        selectedData1 = null;
+        selectedData2 = null;
+        clearDialogData();
+        ">
           取消
         </my-btn>
       </el-row>
@@ -381,43 +316,50 @@ const ruleForm = reactive({
 const isSelected = ref(false); // 是否已选择检查类型
 const forceSubmitCount = ref(0); // 强制提交计数
 const lastSubmitTime = ref(0); // 上次提交时间
-const enableLensCode2 = ref(false); // 是否启用组合号②
+// 组合号2相关逻辑全部隐藏和关闭
+const enableLensCode2 = ref(false); // 始终为false，隐藏开关
 const selectedData1 = ref<any>(null); // 第一次选择的数据
 const selectedData2 = ref<any>(null); // 第二次选择的数据
 const ruleFormRef = ref<FormInstance>();
+
+// 重新定义表单校验规则
 const rules = reactive<FormRules>({
-  ip_and_lensCode: [
-    { required: true, message: '', trigger: 'blur, change' },
-    {
-      validator: (rule: any, value: string, callback: any) => {
-        // 校验格式：IP=xxx
-        const reg = /^(25[0-5]|2[0-4]\d|1\d{2}|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d{2}|[1-9]?\d)){3}=[^=]+$/;
-        if (!value || reg.test(value)) {
-          callback();
-        } else {
-          callback(new Error(''));
-        }
-      },
-      trigger: 'blur, change',
-    },
-  ],
-  ip_and_lensCode2: [
-    { required: true, message: '', trigger: 'blur, change' },
-    {
-      validator: (rule: any, value: string, callback: any) => {
-        // 校验格式：IP=xxx
-        const reg = /^(25[0-5]|2[0-4]\d|1\d{2}|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d{2}|[1-9]?\d)){3}=[^=]+$/;
-        if (!value || reg.test(value)) {
-          callback();
-        } else {
-          callback(new Error(''));
-        }
-      },
-      trigger: 'blur, change',
-    },
-  ],
   examNo: [{ required: true, message: '', trigger: 'blur, change' }],
+  ip_and_lensCode: [], // 不做el-form校验，交给自定义watch
 });
+// const rules = reactive<FormRules>({
+//   ip_and_lensCode: [
+//     { required: true, message: '', trigger: 'blur, change' },
+//     {
+//       validator: (rule: any, value: string, callback: any) => {
+//         // 校验格式：IP=xxx
+//         const reg = /^(25[0-5]|2[0-4]\d|1\d{2}|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d{2}|[1-9]?\d)){3}=[^=]+$/;
+//         if (!value || reg.test(value)) {
+//           callback();
+//         } else {
+//           callback(new Error(''));
+//         }
+//       },
+//       trigger: 'blur, change',
+//     },
+//   ],
+//   ip_and_lensCode2: [
+//     { required: true, message: '', trigger: 'blur, change' },
+//     {
+//       validator: (rule: any, value: string, callback: any) => {
+//         // 校验格式：IP=xxx
+//         const reg = /^(25[0-5]|2[0-4]\d|1\d{2}|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d{2}|[1-9]?\d)){3}=[^=]+$/;
+//         if (!value || reg.test(value)) {
+//           callback();
+//         } else {
+//           callback(new Error(''));
+//         }
+//       },
+//       trigger: 'blur, change',
+//     },
+//   ],
+//   examNo: [{ required: true, message: '', trigger: 'blur, change' }],
+// });
 
 // 实时校验组合号格式，决定按钮是否可用
 const isIpAndLensCodeValid = computed(() => {
@@ -438,6 +380,27 @@ const isExamNoValid = computed(() => {
   return typeof ruleForm.examNo === 'string' && ruleForm.examNo.trim().length > 0;
 });
 
+// 组合号输入框实时校验
+const isComboValid = computed(() => {
+  if (!comboInput.value || comboInput.value.trim() === '') {
+    comboError.value = '组合号必填';
+    return false;
+  }
+  // 校验格式：IP=卡号1、卡号2...，IP为IPv4
+  const reg = /^(25[0-5]|2[0-4]\d|1\d{2}|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d{2}|[1-9]?\d)){3}=.+$/;
+  if (!reg.test(comboInput.value)) {
+    comboError.value = '格式不正确，示例：192.168.1.10=test1、test2';
+    return false;
+  }
+  const match = comboInput.value.match(/^(.*?)=(.*)$/);
+  if (!match) {
+    comboError.value = '格式不正确，示例：192.168.1.10=test1、test2';
+    return false;
+  }
+  // comboError.value = '';
+  return true;
+});
+
 // 检查号实时校验
 const isPatLocalidValid = computed(() => {
   return !!ruleForm.patLocalid && ruleForm.patLocalid.trim().length > 0;
@@ -454,13 +417,197 @@ const searchData = ref<any[]>([]);
  * 暂时将haidong 的ip修改到本地,方便测试
  */
 
+// 新增：多选序号管理
+const selectedRows = ref<any[]>([]); // 存储已选数据及序号
+const comboIp = ref(''); // 组合号IP部分
+const comboLensCodes = ref<string[]>([]); // 组合号内镜卡号数组
+const comboInput = ref(''); // 组合号输入框内容
+const comboError = ref(''); // 组合号输入错误提示
+const examNoError = ref(''); // 检查唯一号输入错误提示
+
+// 新增：组合号输入框格式和数量校验
+const comboValid = computed(() => {
+  if (!comboInput.value || comboInput.value.trim() === '') {
+    comboError.value = '组合号必填';
+    return false;
+  }
+  // 校验格式：IP=卡号1、卡号2...，IP为IPv4
+  const reg = /^(25[0-5]|2[0-4]\d|1\d{2}|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d{2}|[1-9]?\d)){3}=.+$/;
+  if (!reg.test(comboInput.value)) {
+    comboError.value = '格式不正确，示例：192.168.1.10=test1、test2';
+    return false;
+  }
+  const match = comboInput.value.match(/^(.*?)=(.*)$/);
+  if (!match) {
+    comboError.value = '格式不正确，示例：192.168.1.10=test1、test2';
+    return false;
+  }
+  const lensArr = match[2].split('、').map(s => s.trim()).filter(Boolean);
+  if (selectedRows.value.length === 0) {
+    comboError.value = '请先选择数据';
+    return false;
+  }
+  if (lensArr.length !== selectedRows.value.length) {
+    comboError.value = `已选${selectedRows.value.length}条数据，当前输入${lensArr.length}个内镜卡号，二者数量需一致`;
+    return false;
+  }
+  comboError.value = '';
+  return true;
+});
+
+// 检查唯一号输入框的错误提示逻辑
+watch(() => ruleForm.examNo, (val) => {
+  if (!val || !isExamNoValid.value) {
+    examNoError.value = '请填写有效的检查唯一号';
+  } else {
+    examNoError.value = '';
+  }
+});
+
+// 组合号输入框的错误提示逻辑
+// watch(comboInput, (val) => {
+//   if (!val || val.trim() === '') {
+//     comboError.value = '组合号必填';
+//     return;
+//   }
+//   const reg = /^(25[0-5]|2[0-4]\d|1\d{2}|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d{2}|[1-9]?\d)){3}=.+$/;
+//   if (!reg.test(val)) {
+//     comboError.value = '格式不正确，示例：192.168.1.10=test1、test2';
+//     return;
+//   }
+//   const match = val.match(/^(.*?)=(.*)$/);
+//   if (!match) {
+//     comboError.value = '格式不正确，示例：192.168.1.10=test1、test2';
+//     return;
+//   }
+//   const lensArr = match[2].split('、').map(s => s.trim()).filter(Boolean);
+//   if (selectedRows.value.length === 0) {
+//     comboError.value = '请先选择数据';
+//     return;
+//   }
+//   if (lensArr.length !== selectedRows.value.length) {
+//     comboError.value = `已选${selectedRows.value.length}条数据，当前输入${lensArr.length}个内镜卡号，二者数量需一致`;
+//     return;
+//   }
+//   comboError.value = '';
+// });
+
+// 监听组合号输入，动态分割卡号
+watch(comboInput, (val) => {
+  const match = val.match(/^(.*?)=(.*)$/);
+  if (match) {
+    comboIp.value = match[1].trim();
+    comboLensCodes.value = match[2].split('、').map(s => s.trim()).filter(Boolean);
+  } else {
+    comboIp.value = '';
+    comboLensCodes.value = [];
+  }
+});
+
+// 自动补充"、"符号的逻辑
+let autoAddTimer: NodeJS.Timeout | null = null;
+watch(comboInput, (val) => {
+  // 清除之前的定时器
+  if (autoAddTimer) {
+    clearTimeout(autoAddTimer);
+    autoAddTimer = null;
+  }
+  
+  // 检查是否符合IP=格式
+  const match = val.match(/^(.*?)=(.*)$/);
+  if (match) {
+    const ipPart = match[1].trim();
+    const contentPart = match[2];
+    
+    // 验证IP格式
+    const ipReg = /^(25[0-5]|2[0-4]\d|1\d{2}|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d{2}|[1-9]?\d)){3}$/;
+    if (ipReg.test(ipPart) && contentPart && !contentPart.endsWith('、')) {
+      // 如果内容部分不为空且不以"、"结尾，设置2秒后自动补充
+      autoAddTimer = setTimeout(() => {
+        if (comboInput.value && !comboInput.value.endsWith('、')) {
+          comboInput.value += '、';
+        }
+      }, 1500);
+    }
+  }
+});
+
+// 组件卸载时清除定时器
+onUnmounted(() => {
+  if (autoAddTimer) {
+    clearTimeout(autoAddTimer);
+  }
+});
+
+// 实时错误提示
+watch([comboInput, selectedRows], ([val, sel]) => {
+  if (!val || val.trim() === '') {
+    comboError.value = '组合号必填';
+    return;
+  }
+  const reg = /^(25[0-5]|2[0-4]\d|1\d{2}|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d{2}|[1-9]?\d)){3}=.+$/;
+  if (!reg.test(val)) {
+    comboError.value = '格式不正确，示例：192.168.1.10=test1、test2';
+    return;
+  }
+  const match = val.match(/^(.*?)=(.*)$/);
+  if (!match) {
+    comboError.value = '格式不正确，示例：192.168.1.10=test1、test2';
+    return;
+  }
+  const lensArr = match[2].split('、').map(s => s.trim()).filter(Boolean);
+  if (sel.length === 0) {
+    comboError.value = '请先选择数据';
+    return;
+  }
+  if (lensArr.length !== sel.length) {
+    comboError.value = `已选${sel.length}条数据，当前输入${lensArr.length}个内镜卡号，二者数量需一致`;
+    return;
+  }
+  comboError.value = '';
+});
+
+// // 监听组合号输入，动态分割卡号
+// watch(comboInput, (val) => {
+//   const match = val.match(/^(.*?)=(.*)$/);
+//   if (match) {
+//     comboIp.value = match[1].trim();
+//     comboLensCodes.value = match[2].split('、').map(s => s.trim()).filter(Boolean);
+//   } else {
+//     comboIp.value = '';
+//     comboLensCodes.value = [];
+//   }
+//   // 实时校验
+//   if (!forceSubmitCount.value && selectedRows.value.length !== comboLensCodes.value.length) {
+//     comboError.value = `已选${selectedRows.value.length}条，输入${comboLensCodes.value.length}个卡号，数量需一致`;
+//   } else {
+//     comboError.value = '';
+//   }
+// });
+
+// 表格多选序号列逻辑
+const toggleSelectRow = (row: any) => {
+  const idx = selectedRows.value.findIndex(r => r.examNo === row.examNo);
+  if (idx === -1) {
+    selectedRows.value.push(row);
+  } else {
+    selectedRows.value.splice(idx, 1);
+  }
+  // 重新编号
+  selectedRows.value = selectedRows.value.map((r, i) => ({ ...r, _selIndex: i + 1 }));
+};
+const getRowSelIndex = (row: any) => {
+  const idx = selectedRows.value.findIndex(r => r.examNo === row.examNo);
+  return idx === -1 ? '' : (idx + 1);
+};
+
+// 表格高亮选中行
+const rowClassName = (row: any) => {
+  return getRowSelIndex(row) !== '' ? 'selected-row' : '';
+};
+
 const searchHaidong = async () => {
   try {
-    // 验证必填字段
-    if (!ruleForm.ip_and_lensCode.trim()) {
-      ElMessage.error('请先输入组合号');
-      return;
-    }
     if (!ruleForm.examNo.trim()) {
       ElMessage.error('请先输入检查唯一号');
       return;
@@ -523,6 +670,11 @@ const searchHaidong = async () => {
         console.log('未找到匹配的行②:', currentSelected2.examNo);
       }
     }
+
+    // 清空多选
+    selectedRows.value = [];
+    // comboInput.value = '';
+    comboError.value = '';
 
     // 清除表格当前选中行的指针
     nextTick(() => {
@@ -668,51 +820,99 @@ const cancelSelection = (number: number) => {
 };
 
 // 监听组合号②开关变化
-watch(enableLensCode2, (newVal, oldVal) => {
-  // 只有在开关状态真正改变时才清空数据
-  if (oldVal !== undefined) {
-    // 避免初始化时触发
-    if (!newVal) {
-      // 关闭开关时清空双选数据
-      selectedData1.value = null;
-      selectedData2.value = null;
-      isSelected.value = false;
-      // 清除所有标记
-      searchData.value.forEach((item) => {
-        item.markNumber = '';
-      });
-    }
-    // 开启开关时不清除数据，保持现有选择状态
-    isSelected.value = false;
-  }
-});
+// watch(enableLensCode2, (newVal, oldVal) => {
+//   // 只有在开关状态真正改变时才清空数据
+//   if (oldVal !== undefined) {
+//     // 避免初始化时触发
+//     if (!newVal) {
+//       // 关闭开关时清空双选数据
+//       selectedData1.value = null;
+//       selectedData2.value = null;
+//       isSelected.value = false;
+//       // 清除所有标记
+//       searchData.value.forEach((item) => {
+//         item.markNumber = '';
+//       });
+//     }
+//     // 开启开关时不清除数据，保持现有选择状态
+//     isSelected.value = false;
+//   }
+// });
+
 
 // 监听选择数据变化，实时更新按钮状态
-watch(
-  [selectedData1, selectedData2],
-  () => {
-    // 实时检查双选状态
-    if (selectedData1.value && selectedData2.value) {
-      const isGastroscopy1 =
-        selectedData1.value.examSubclass.includes('胃镜') || selectedData1.value.itemName.includes('胃镜');
-      const isColonoscopy1 =
-        selectedData1.value.examSubclass.includes('肠镜') || selectedData1.value.itemName.includes('肠镜');
-      const isGastroscopy2 =
-        selectedData2.value.examSubclass.includes('胃镜') || selectedData2.value.itemName.includes('胃镜');
-      const isColonoscopy2 =
-        selectedData2.value.examSubclass.includes('肠镜') || selectedData2.value.itemName.includes('肠镜');
+// watch(
+//   [selectedData1, selectedData2],
+//   () => {
+//     // 实时检查双选状态
+//     if (selectedData1.value && selectedData2.value) {
+//       const isGastroscopy1 =
+//         selectedData1.value.examSubclass.includes('胃镜') || selectedData1.value.itemName.includes('胃镜');
+//       const isColonoscopy1 =
+//         selectedData1.value.examSubclass.includes('肠镜') || selectedData1.value.itemName.includes('肠镜');
+//       const isGastroscopy2 =
+//         selectedData2.value.examSubclass.includes('胃镜') || selectedData2.value.itemName.includes('胃镜');
+//       const isColonoscopy2 =
+//         selectedData2.value.examSubclass.includes('肠镜') || selectedData2.value.itemName.includes('肠镜');
 
-      const isBothGastrointestinal = (isGastroscopy1 || isColonoscopy1) && (isGastroscopy2 || isColonoscopy2);
-      isSelected.value = isBothGastrointestinal;
-    } else {
-      isSelected.value = false;
-    }
-  },
-  { immediate: true }
-);
+//       const isBothGastrointestinal = (isGastroscopy1 || isColonoscopy1) && (isGastroscopy2 || isColonoscopy2);
+//       isSelected.value = isBothGastrointestinal;
+//     } else {
+//       isSelected.value = false;
+//     }
+//   },
+//   { immediate: true }
+// );
+
+// 新增：完成按钮可用性逻辑
+const canSubmit = computed(() => {
+  return selectedRows.value.length > 0 && comboValid.value && isExamNoValid.value;
+});
+
+let lastClickTime = 0;
+let clickCount = 0;
+
+// 集中清空弹窗相关数据
+const clearDialogData = () => {
+  comboInput.value = '';
+  comboIp.value = '';
+  comboLensCodes.value = [];
+  comboError.value = '';
+  ruleForm.examNo = '';
+  ruleForm.ip_and_lensCode = '';
+  ruleForm.ip_and_lensCode2 = '';
+  ruleForm.patLocalid = '';
+  ruleForm.name = '';
+  ruleForm.examClass = '';
+  ruleForm.examSubclass = '';
+  ruleForm.itemName = '';
+  ruleForm.staffName = '';
+  ruleForm.examTime = '';
+  ruleForm.isAbnormal = '';
+
+  selectedRows.value = [];
+  isSelected.value = false;
+  isSearch.value = false;
+  isModify.value = false;
+  forceSubmitCount.value = 0;
+  selectedData1.value = null;
+  selectedData2.value = null;
+};
+
+// 清空选择数据
+const clearSelectedData = () => {
+  selectedRows.value = [];
+  isSelected.value = false;
+  isSearch.value = false;
+  isModify.value = false;
+  forceSubmitCount.value = 0;
+  selectedData1.value = null;
+  selectedData2.value = null;
+}
 
 // 点击添加
 const add = () => {
+  clearSelectedData();
   // 如果上一次操作是修改则清空表单
   if (isModify.value) initForm(ruleForm);
   isModify.value = false;
@@ -724,6 +924,8 @@ const add = () => {
   selectedData1.value = null; // 清空选择数据
   selectedData2.value = null; // 清空选择数据
   conRecordDialog.value = true;
+  // 新增：打开弹窗时立即触发组合号校验提示
+  comboInput.value = comboInput.value; // 触发watch，立即校验
 };
 
 // 修改时给表单进行赋值
@@ -736,174 +938,125 @@ const modify = (row: any) => {
   conRecordDialog.value = true;
 };
 
+// 完成按钮逻辑调整
 const update = async (formEl: FormInstance | undefined) => {
+  // console.log('测试信息1');
   dialogLoad.value = true;
   try {
     if (!formEl) return;
+
+    if (!isExamNoValid.value) {
+      ElMessage.error('检查唯一号必填');
+      return;
+    }
     await formEl.validate();
 
-    // 再次校验组合号和检查唯一号
-    const ipReg = /^(25[0-5]|2[0-4]\d|1\d{2}|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d{2}|[1-9]?\d)){3}=[^=]+$/;
-    if (ruleForm.ip_and_lensCode && !ipReg.test(ruleForm.ip_and_lensCode)) {
-      ElMessage.error('组合号①格式不正确，示例：192.168.1.10=test');
-      dialogLoad.value = false;
-      return;
-    }
-    // 只有启用组合号②时才进行校验
-    if (enableLensCode2.value && ruleForm.ip_and_lensCode2 && !ipReg.test(ruleForm.ip_and_lensCode2)) {
-      ElMessage.error('组合号②格式不正确，示例：192.168.1.10=test');
-      dialogLoad.value = false;
-      return;
-    }
-    // 检查唯一号为空的情况不再弹窗，交给表单校验
-    if (typeof ruleForm.examNo !== 'string' || ruleForm.examNo.trim().length === 0) {
-      dialogLoad.value = false;
+    // 验证必填字段 - 组合号输入框的校验
+    if (!isComboValid.value) {
+      ElMessage.error(comboError.value);
       return;
     }
 
-    // 检查是否为修改模式，如果是修改模式则直接提交
-    if (isModify.value) {
-      const data = removeInvalid(ruleForm);
-      await conRecord.update(data);
+    // 内镜卡号数量必须大于等于选择的数据行
+    if (selectedRows.value.length > comboLensCodes.value.length) {
+      ElMessage.error("选择的数据不能多于内镜卡号数");
+      return;
+    }
+
+    // 正常批量提交
+    const ip = comboIp.value;
+    const lensArr = comboLensCodes.value;
+    if (comboValid.value && isExamNoValid.value) {
+      const batch = selectedRows.value.map((row, i) => {
+        return {
+          // 只保留row的主数据
+          examNo: row.examNo ? row.examNo : '',
+          patLocalid: row.patLocalid ? row.patLocalid : '',
+          name: row.name ? row.name : '',
+          examClass: row.examClass ? row.examClass : '',
+          examSubclass: row.examSubclass ? row.examSubclass : '',
+          itemName: row.itemName ? row.itemName : '',
+          staffName: row.staffName ? row.staffName : '',
+          examTime: row.examTime ? row.examTime : '',
+          isAbnormal: row.isAbnoraml ? row.isAbnoraml : '',
+          // 其他必需字段可补充
+          ip_and_lensCode: ip && lensArr[i] ? `${ip}=${lensArr[i]}` : '',
+          // ip_and_lensCode: `${comboIp.value}=${comboLensCodes.value[i] || ''}` // 这里确保是字符串
+        };
+      });
+      await conRecord.saveBatch(batch);
       await getList();
-      isModify.value = false;
-      isSearch.value = false;
       conRecordDialog.value = false;
+      clearDialogData();
       initForm(ruleForm);
-      dialogLoad.value = false;
+      clickCount = 0;
       return;
     }
 
-    // 新增模式下的验证逻辑
-    const currentTime = Date.now();
-
-    // 检查是否已选择检查类型
-    if (!isSelected.value) {
-      // 检查是否为强制提交（连续点击两次）
-      if (currentTime - lastSubmitTime.value < 2000) {
-        // 2秒内连续点击
-        forceSubmitCount.value++;
-        if (forceSubmitCount.value >= 2) {
-          // 强制提交前的基本验证
-          if (!ruleForm.ip_and_lensCode.trim() || !ruleForm.examNo.trim()) {
-            ElMessage.error('强制提交时组合号和检查唯一号仍为必填项');
-            dialogLoad.value = false;
-            return;
-          }
-
-          ElMessage.warning('检测到连续点击，允许强制录入诊疗信息');
-          // 强制提交逻辑
-          const data = removeInvalid(ruleForm);
-          data.forceInsert = true;
-          if (!enableLensCode2.value) data.ip_and_lensCode2 = null;
-
-          // 如果是双选模式，封装两份数据
-          if (enableLensCode2.value && selectedData1.value && selectedData2.value) {
-            const dataList = [
-              {
-                ...data,
-                ip_and_lensCode: ruleForm.ip_and_lensCode,
-                ip_and_lensCode2: null,
-                examNo: selectedData1.value.examNo,
-                patLocalid: selectedData1.value.patLocalid,
-                name: selectedData1.value.name,
-                examClass: selectedData1.value.examClass,
-                examSubclass: selectedData1.value.examSubclass,
-                itemName: selectedData1.value.itemName,
-                staffName: selectedData1.value.staffName,
-                examTime: selectedData1.value.examTime,
-                isAbnormal: selectedData1.value.isAbnoraml,
-              },
-              {
-                ...data,
-                ip_and_lensCode: ruleForm.ip_and_lensCode2,
-                ip_and_lensCode2: null,
-                examNo: selectedData2.value.examNo,
-                patLocalid: selectedData2.value.patLocalid,
-                name: selectedData2.value.name,
-                examClass: selectedData2.value.examClass,
-                examSubclass: selectedData2.value.examSubclass,
-                itemName: selectedData2.value.itemName,
-                staffName: selectedData2.value.staffName,
-                examTime: selectedData2.value.examTime,
-                isAbnormal: selectedData2.value.isAbnoraml,
-              },
-            ];
-            await conRecord.saveBatch(dataList);
-          } else {
-            const dataList = [data];
-            await conRecord.saveBatch(dataList);
-          }
-          await getList();
-          isModify.value = false;
-          isSearch.value = false;
-          conRecordDialog.value = false;
-          initForm(ruleForm);
-          forceSubmitCount.value = 0;
-          dialogLoad.value = false;
-          ruleForm.forceInsert = false;
-          return;
-        }
-      } else {
-        forceSubmitCount.value = 1;
-      }
-      lastSubmitTime.value = currentTime;
-
-      ElMessage.error('请优先查询并选择胃镜或肠镜检查类型');
-      dialogLoad.value = false;
-      return;
+    if (selectedRows.value.length === 0) {
+      ElMessage.warning('请先选择要提交的数据');
     }
 
-    // 正常提交逻辑
-    const data = removeInvalid(ruleForm);
-    if (!enableLensCode2.value) data.ip_and_lensCode2 = null;
+    if (selectedRows.value.length > 0 && lensArr.length !== selectedRows.value.length) {
+      ElMessage.warning(`已选${selectedRows.value.length}条数据，当前输入${lensArr.length}个内镜卡号，二者数量需一致`);
+    }
 
-    // 如果是双选模式，封装两份数据
-    if (enableLensCode2.value && selectedData1.value && selectedData2.value) {
-      const dataList = [
-        {
-          ...data,
-          ip_and_lensCode: ruleForm.ip_and_lensCode,
-          ip_and_lensCode2: null,
-          examNo: selectedData1.value.examNo,
-          patLocalid: selectedData1.value.patLocalid,
-          name: selectedData1.value.name,
-          examClass: selectedData1.value.examClass,
-          examSubclass: selectedData1.value.examSubclass,
-          itemName: selectedData1.value.itemName,
-          staffName: selectedData1.value.staffName,
-          examTime: selectedData1.value.examTime,
-          isAbnormal: selectedData1.value.isAbnoraml,
-        },
-        {
-          ...data,
-          ip_and_lensCode: ruleForm.ip_and_lensCode2,
-          ip_and_lensCode2: null,
-          examNo: selectedData2.value.examNo,
-          patLocalid: selectedData2.value.patLocalid,
-          name: selectedData2.value.name,
-          examClass: selectedData2.value.examClass,
-          examSubclass: selectedData2.value.examSubclass,
-          itemName: selectedData2.value.itemName,
-          staffName: selectedData2.value.staffName,
-          examTime: selectedData2.value.examTime,
-          isAbnormal: selectedData2.value.isAbnoraml,
-        },
-      ];
-      await conRecord.saveBatch(dataList);
+    // 检测一秒内连续点击两次
+    const now = Date.now();
+    if (now - lastClickTime < 1000) {
+      clickCount++;
     } else {
-      const dataList = [data];
-      await conRecord.saveBatch(dataList);
+      clickCount = 1;
     }
-    await getList();
-    isModify.value = false;
-    isSearch.value = false;
-    conRecordDialog.value = false;
-    initForm(ruleForm);
-    isSelected.value = false;
-    forceSubmitCount.value = 0;
+    lastClickTime = now;
+
+    // 强制录入逻辑
+    if (clickCount >= 2 && isComboValid.value && isExamNoValid.value) {
+      const batch = [];
+      const indexList: number[] = [];
+      if (selectedRows.value.length > 0) {
+        const batch1 = selectedRows.value.map((row, i) => {
+          indexList.push(i);
+          return {
+            // 只保留row的主数据
+            examNo: row.examNo ? row.examNo : '',
+            patLocalid: row.patLocalid ? row.patLocalid : '',
+            name: row.name ? row.name : '',
+            examClass: row.examClass ? row.examClass : '',
+            examSubclass: row.examSubclass ? row.examSubclass : '',
+            itemName: row.itemName ? row.itemName : '',
+            staffName: row.staffName ? row.staffName : '',
+            examTime: row.examTime ? row.examTime : '',
+            isAbnormal: row.isAbnoraml ? row.isAbnoraml : '',
+            ip_and_lensCode: ip && lensArr[i] ? `${ip}=${lensArr[i]}` : '',
+          };
+        });
+        batch.push(...batch1);
+      }
+
+      const batch2 = lensArr.filter((item, i) => !indexList.includes(i)).map((item, i) => {
+        return {
+          examNo: ruleForm.examNo,
+          ip_and_lensCode: ip && item ? `${ip}=${item}` : '',
+          forceInsert: true,
+        }
+      })
+      batch.push(...batch2);
+
+      await conRecord.saveBatch(batch);
+      await getList();
+      conRecordDialog.value = false;
+      clearDialogData();
+      initForm(ruleForm);
+      ElMessage.success('检测到连续点击，已触发强制录入机制');
+      dialogLoad.value = false;
+      clickCount = 0;
+    }
+    return;
+
   } catch (e) {
-    console.log(e);
+    console.log('表单验证失败', e);
+    ElMessage.error('保存失败');
   }
   dialogLoad.value = false;
 };
@@ -913,7 +1066,6 @@ const update = async (formEl: FormInstance | undefined) => {
  * @description 修复删除记录方法为Get
  * @since 2025-07-18
  */
-
 // 删除记录
 const remove = async (id: number) => {
   try {
@@ -931,7 +1083,13 @@ const remove = async (id: number) => {
 // 导出记录
 const download = async () => {
   try {
-    const res = await conRecord.excel({});
+    let isAll = false;
+    if (listQuery.isAbnormal === '2') {
+      listQuery.isAbnormal = '';
+      isAll = true;
+    }
+    const res = await conRecord.excel(removeInvalid(listQuery));
+    if (isAll) listQuery.isAbnormal = '2';
     ElMessage.success('下载成功');
     down(res, '诊疗记录.xlsx');
   } catch (e) {
@@ -1153,5 +1311,47 @@ header {
     border-color: #ffc107;
     color: #856404;
   }
+}
+
+.sel-checkbox {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: 2px solid #dcdfe6;
+  border-radius: 6px;
+  background: #fff;
+  cursor: pointer;
+  position: relative;
+  transition: border-color 0.2s, background 0.2s;
+}
+
+.sel-checkbox.checked {
+  border-color: #409eff;
+  background: #e6f7ff;
+}
+
+.sel-index {
+  font-size: 16px;
+  color: #606266;
+  font-weight: bold;
+}
+
+.sel-checkbox.checked .sel-index {
+  color: #409eff;
+}
+
+.sel-check {
+  position: absolute;
+  right: 2px;
+  bottom: 2px;
+  font-size: 14px;
+  color: #409eff;
+  font-weight: bold;
+}
+
+.selected-row {
+  background: #e6f7ff !important;
 }
 </style>

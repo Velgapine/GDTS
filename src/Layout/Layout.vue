@@ -1,8 +1,11 @@
 <template>
   <el-header>
     <div class="logo-box">
-      <img src="@/assets/img/logo.jpg" />
+      <img src="@/assets/img/logo.jpg" class="side-logo" />
+      <span v-if="hospitalInfo.name" class="hospital-name">{{ hospitalInfo.name }}</span>
       <span class="product">内镜清洗消毒系统</span>
+      <img v-if="hospitalInfo.logoUrl" :src="hospitalInfo.logoUrl" class="side-logo" />
+      <!-- <img v-else src="@/assets/img/logo.jpg" class="side-logo" /> -->
     </div>
     <div class="right-box">
       <span>
@@ -10,19 +13,27 @@
         <el-switch v-model="isSpeak" class="switch" @click="changeSpeak" />
       </span>
       <span class="blue" @click="toMonitor">
-        <el-icon class="house-icon"><Monitor /></el-icon>
+        <el-icon class="house-icon">
+          <Monitor />
+        </el-icon>
         <span class="text">监控</span>
       </span>
       <span v-show="isVisitor" class="blue" @click="toConRecord">
-        <el-icon class="house-icon"><Calendar /></el-icon>
+        <el-icon class="house-icon">
+          <Calendar />
+        </el-icon>
         <span class="text">诊疗记录</span>
       </span>
       <span>
-        <el-icon><User /></el-icon>
+        <el-icon>
+          <User />
+        </el-icon>
         <span class="text big-margin">{{ store.state.username }}</span>
       </span>
       <span class="red" @click="logout">
-        <el-icon><SwitchButton /></el-icon>
+        <el-icon>
+          <SwitchButton />
+        </el-icon>
         <span class="text">注销</span>
       </span>
     </div>
@@ -48,6 +59,7 @@
 import { Monitor, Calendar, User, SwitchButton } from '@element-plus/icons-vue';
 import user from '@/web/api/user';
 import confirm from '@/utils/confirm';
+import { getHospitalInfo } from '@/web/utils/hospitalInfo';
 
 const router = useRouter();
 // 基本布局页面挂载时跳转到首页
@@ -113,6 +125,7 @@ const asideList = reactive([
   {
     name: '医院管理',
     children: [
+      { label: '医院信息管理', name: 'hospitalInfo' },
       { label: '科室管理', name: 'dept' },
       { label: '用户管理', name: 'administrator' },
       { label: '护士管理', name: 'nurse' },
@@ -141,6 +154,19 @@ const asideList = reactive([
   //   children: [{ label: '耗材管理', name: 'consumption' }],
   // },
 ]);
+
+const hospitalInfo = ref(getHospitalInfo() || { name: '', logoUrl: '' });
+
+watchEffect(() => {
+  hospitalInfo.value = getHospitalInfo() || { name: '', logoUrl: '' };
+});
+
+// 监听页面存储变化，自动刷新（兼容手动刷新和弹窗保存后）
+window.addEventListener('storage', (e) => {
+  if (e.key === 'hospital_info') {
+    location.reload();
+  }
+});
 </script>
 
 <style lang="scss" scoped>
@@ -155,49 +181,71 @@ const asideList = reactive([
   color: #606266;
   background: #ffffff;
   box-shadow: 0px 2px 12px rgba(0, 0, 0, 0.1);
+
   .logo-box {
     display: flex;
     align-items: center;
-    img {
+    /* 靠左排列，不居中 */
+    margin-right: 40px;
+    .side-logo {
+      width: 60px;
+      height: 60px;
+      object-fit: contain;
+      border-radius: 8px;
       margin-right: 10px;
-      width: 65px;
+      margin-left: 0;
     }
-    .text {
-      position: relative;
-      top: -2.8px;
-      margin: 0 5px;
-      font-size: 16px;
+    .center-title {
+      display: flex;
+      align-items: center;
+      gap: 30px;
+    }
+    .hospital-name {
+      font-size: 26px;
+      font-weight: 600;
+      color: #8b8c8f;
+      letter-spacing: 15px;
+      margin-right: 0;
+      margin-left: 0;
+      /* 让医院名和系统名视觉上连贯 */
     }
     .product {
       font-size: 26px;
-      // color: #0100fa;
+      font-weight: 600;
       color: #8b8c8f;
       letter-spacing: 15px;
+      margin-left: 0;
     }
   }
+
   .right-box {
     .switch {
       position: relative;
       top: -3px;
       margin-right: 20px;
     }
+
     .text {
       position: relative;
       top: -2.8px;
       margin: 0 5px;
       font-size: 16px;
     }
+
     .big-margin {
       margin-right: 15px;
     }
+
     .red {
       &:hover {
         cursor: pointer;
         color: red;
       }
     }
+
     .blue {
       margin-right: 15px;
+
       &:hover {
         cursor: pointer;
         color: #409eff;
@@ -205,30 +253,37 @@ const asideList = reactive([
     }
   }
 }
+
 .el-container {
   width: 100%;
   height: 100%;
+
   .el-aside {
     padding: 0.5% 0;
     height: 99%;
     background: #ffffff;
+
     .login-tip {
       color: #45dce7;
+
       &:hover {
         cursor: pointer;
         color: #409eff;
       }
+
       div {
         margin: 15px;
         font-size: 16px;
       }
     }
+
     .nav-title {
       margin-left: 20px;
       margin-bottom: 25px;
       font-size: 16px;
       color: #45dce7;
     }
+
     .nav {
       display: block;
       text-decoration: none;
@@ -236,20 +291,24 @@ const asideList = reactive([
       margin-bottom: 35px;
       font-size: 14px;
       color: #303133;
+
       &:hover {
         cursor: pointer;
         color: #45dce7;
       }
     }
+
     .router-link-active,
     .router-link-active span {
       color: #409eff;
     }
   }
+
   .el-main {
     background: url(../assets/img/background.png);
     background-size: cover;
   }
+
   .router-link-active {
     color: #409eff;
   }
