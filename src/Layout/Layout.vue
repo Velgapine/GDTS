@@ -4,7 +4,7 @@
       <img src="@/assets/img/logo.jpg" class="side-logo" />
       <span v-if="hospitalInfo.name" class="hospital-name">{{ hospitalInfo.name }}</span>
       <span class="product">内镜清洗消毒系统</span>
-      <img v-if="hospitalInfo.logoUrl" :src="hospitalInfo.logoUrl" class="side-logo" />
+      <img v-if="hospitalInfo.logoUrl && hospitalInfo.logoUrl.trim() !== ''" :src="hospitalInfo.logoUrl" class="side-logo" />
       <!-- <img v-else src="@/assets/img/logo.jpg" class="side-logo" /> -->
     </div>
     <div class="right-box">
@@ -60,10 +60,15 @@ import { Monitor, Calendar, User, SwitchButton } from '@element-plus/icons-vue';
 import user from '@/web/api/user';
 import confirm from '@/utils/confirm';
 import { getHospitalInfo } from '@/web/utils/hospitalInfo';
+import { fetchHospitalInfo } from '@/web/utils/globalHospitalInfo';
 
 const router = useRouter();
+
 // 基本布局页面挂载时跳转到首页
-onMounted(() => {
+onMounted(async () => {
+  // 自动获取医院信息
+  await fetchHospitalInfo();
+  
   router.replace({
     name: 'Home',
   });
@@ -167,6 +172,8 @@ window.addEventListener('storage', (e) => {
     location.reload();
   }
 });
+
+
 </script>
 
 <style lang="scss" scoped>

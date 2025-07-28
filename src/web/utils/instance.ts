@@ -4,9 +4,9 @@ import store from '@/store';
 
 console.log(process.env.NODE_ENV);
 
-const urlList = ['127.0.0.1', '127.0.0.1', '36.133.226.32'];
+const urlList = ['127.0.0.1', '47.115.149.217', '36.133.226.32'];
 
-const baseUrl = process.env.NODE_ENV === 'development' ? `http://${urlList[1]}:8610` : window.httpUrl;
+const baseUrl = process.env.NODE_ENV === 'development' ? `http://${urlList[0]}:8610` : window.httpUrl;
 
 // 设置post方法的请求头
 axios.defaults.headers.post['Content-Type'] = 'application/x-www-form-urlencoded;charset=UTF-8';

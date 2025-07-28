@@ -58,6 +58,7 @@
 
 <script lang="ts" setup>
 import user from '@/web/api/user';
+import { fetchHospitalInfo } from '@/web/utils/globalHospitalInfo';
 import CryptoJS from 'crypto-js';
 import speak from '@/utils/speak';
 
@@ -97,6 +98,9 @@ async function register() {
   }
   loading.value = false;
 }
+
+
+
 // 登录
 async function login() {
   loading.value = true;
@@ -116,6 +120,10 @@ async function login() {
     if (res.code === 4000) {
       store.commit('SET_USERNAME', userName);
       store.commit('SET_TOKEN', res.data);
+      
+      // 登录成功后自动获取医院信息
+      await fetchHospitalInfo();
+      
       if (!isVisitor.value) {
         // 语音播报
         speak(`欢迎用户${userName}登录系统`);
@@ -147,15 +155,17 @@ const visit = () => {
   isVisitor.value = true;
   ElMessage.success('访客无需注册，请点击【确认】直接登录');
 };
-onMounted(() => {
+onMounted(async () => {
   const username = store.state.username;
   const token = store.state.token;
   const isFirst = store.state.isFirst;
   if (username === 'visitor') {
     // 访客登录
+    await fetchHospitalInfo(); // 获取医院信息
     router.replace({ name: 'Monitor' });
   } else if (token) {
     // 已登录
+    await fetchHospitalInfo(); // 获取医院信息
     router.replace({ name: 'Home' });
   } else if (isFirst === 'first') {
     // 初次进入系统

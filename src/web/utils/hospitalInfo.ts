@@ -22,4 +22,4 @@ export function setHospitalInfo(info: HospitalInfo) {
 
 export function removeHospitalInfo() {
   localStorage.removeItem(KEY);
-}
+} 
