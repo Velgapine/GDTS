@@ -111,7 +111,12 @@
               <span v-show="row.isDel === 0 && row.state === 'OK'" @click="modify(row)">编辑</span>
               <span v-show="row.isDel === 0 && row.state === 'OK'" @click="remove(row.id)">弃用</span>
               <span v-show="row.isDel === 0 && row.state === 'OK'" @click="toMainTain(row.id)">送修</span>
-              <span v-show="row.isDel === 0 && row.state === 'OK' && row.scopeNum" @click="unbind(row.id)">解绑</span>
+              <span
+                v-show="row.isDel === 0 && row.state === 'OK' && row.scopeNum"
+                style="color: #409eff; cursor: pointer"
+                @click="unbind(row.id)"
+                >解绑</span
+              >
               <span v-show="row.isDel === 0 && row.state === 'MAINTAIN'" @click="showDialog(row.id)">恢复</span>
               <span v-show="username === 'Administrator'" class="del-btn" @click="del(row.id)">删除</span>
             </div>
@@ -312,6 +317,7 @@
 <script lang="ts" setup>
 import { ArrowRight, ChatLineSquare } from '@element-plus/icons-vue';
 import type { FormInstance, FormRules } from 'element-plus';
+import { ElMessage } from 'element-plus';
 import card from '@/web/api/card';
 import mirror from '@/web/api/mirror';
 import scopeType from '@/web/api/type';
@@ -394,7 +400,7 @@ const remove = async (id: string) => {
   try {
     await confirm('您确定要弃用吗？');
     const res = await mirror.remove(id);
-    if (res.data.code === 5000 && res.data.msg === '磁卡未解绑') {
+    if ((res as any).code === 5000 && (res as any).msg === '磁卡未解绑') {
       ElMessage.error('请先解绑磁卡！');
       return;
     }
@@ -411,13 +417,19 @@ const unbind = async (id: string) => {
   try {
     await confirm('您确定要解绑吗？');
     const res = await mirror.unbind(id);
-    ElMessage.success('解绑成功!');
 
-    await getList();
+    if (res && (res as any).code === 4000) {
+      ElMessage.success('解绑成功!');
+      await getList();
+    } else {
+      ElMessage.error((res as any)?.msg || '解绑失败');
+    }
   } catch (e) {
-    console.log(e);
+    console.error('解绑失败:', e);
+    ElMessage.error('解绑失败，请重试');
+  } finally {
+    dialogLoad.value = false;
   }
-  dialogLoad.value = false;
 };
 
 // 彻底删除
