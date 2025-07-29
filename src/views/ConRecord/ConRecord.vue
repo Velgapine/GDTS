@@ -223,7 +223,7 @@
       <el-row justify="center" style="margin-top: 20px">
         <!-- <my-btn color="linear-gradient(180deg, #38F9D6 0%, #3EF0A4 59.17%, #6DEE99 100%)" @click="update(ruleFormRef)"
         >完成</my-btn -->
-        <!-- <my-btn 
+        <!-- <my-btn
           :color="isModify || isSelected ? 'linear-gradient(180deg, #38F9D6 0%, #3EF0A4 59.17%, #6DEE99 100%)' : '#dcdfe6'"
           :disabled="!isModify && !isSelected"
           @click="update(ruleFormRef)" -->
@@ -263,6 +263,7 @@ import initForm from '@/utils/initForm';
 import removeInvalid from '@/utils/removeInvalid';
 import confirm from '@/utils/confirm';
 import down from '@/web/utils/download';
+import baseUrl from '@/web/utils/baseUrl';
 // import { ElMessage } from 'element-plus/lib/components';
 // import store from '@/store';
 
@@ -425,6 +426,22 @@ const comboInput = ref(''); // 组合号输入框内容
 const comboError = ref(''); // 组合号输入错误提示
 const examNoError = ref(''); // 检查唯一号输入错误提示
 
+// 检测重复内镜卡号的函数
+const findDuplicateLensCodes = (lensCodes: string[]): string[] => {
+  const seen = new Set<string>();
+  const duplicates = new Set<string>();
+
+  for (const code of lensCodes) {
+    if (seen.has(code)) {
+      duplicates.add(code);
+    } else {
+      seen.add(code);
+    }
+  }
+
+  return Array.from(duplicates);
+};
+
 // 新增：组合号输入框格式和数量校验
 const comboValid = computed(() => {
   if (!comboInput.value || comboInput.value.trim() === '') {
@@ -443,6 +460,14 @@ const comboValid = computed(() => {
     return false;
   }
   const lensArr = match[2].split('、').map(s => s.trim()).filter(Boolean);
+
+  // 检测重复的内镜卡号
+  const duplicates = findDuplicateLensCodes(lensArr);
+  if (duplicates.length > 0) {
+    comboError.value = `检测到重复的内镜卡号：${duplicates.join('、')}`;
+    return false;
+  }
+
   if (selectedRows.value.length === 0) {
     comboError.value = '请先选择数据';
     return false;
@@ -512,13 +537,13 @@ watch(comboInput, (val) => {
     clearTimeout(autoAddTimer);
     autoAddTimer = null;
   }
-  
+
   // 检查是否符合IP=格式
   const match = val.match(/^(.*?)=(.*)$/);
   if (match) {
     const ipPart = match[1].trim();
     const contentPart = match[2];
-    
+
     // 验证IP格式
     const ipReg = /^(25[0-5]|2[0-4]\d|1\d{2}|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d{2}|[1-9]?\d)){3}$/;
     if (ipReg.test(ipPart) && contentPart && !contentPart.endsWith('、')) {
@@ -556,6 +581,15 @@ watch([comboInput, selectedRows], ([val, sel]) => {
     return;
   }
   const lensArr = match[2].split('、').map(s => s.trim()).filter(Boolean);
+
+  // 检测重复的内镜卡号
+  const duplicates = findDuplicateLensCodes(lensArr);
+  if (duplicates.length > 0) {
+    comboError.value = `检测到重复的内镜卡号：${duplicates.join('、')}`;
+    // ElMessage.warning(`检测到重复的内镜卡号：${duplicates.join('、')}`);
+    return;
+  }
+
   if (sel.length === 0) {
     comboError.value = '请先选择数据';
     return;
@@ -618,13 +652,15 @@ const searchHaidong = async () => {
     const currentSelected2 = selectedData2.value;
     const currentIsSelected = isSelected.value;
 
-    console.log('查询前保存的选择数据:', { currentSelected1, currentSelected2, currentIsSelected });
+    // console.log('查询前保存的选择数据:', { currentSelected1, currentSelected2, currentIsSelected });
 
     // 改接口端口为8612
     // const baseUrl = process.env.NODE_ENV === 'development' ? 'http://1.117.155.214' : window.httpUrl.slice(0, -5);
-    const baseUrl = process.env.NODE_ENV === 'development' ? 'http://127.0.0.1' : window.httpUrl.slice(0, -5);
+    // const baseUrl = process.env.NODE_ENV === 'development' ? 'http://127.0.0.1' : window.httpUrl.slice(0, -5);
+    // const baseUrl = process.env.NODE_ENV === 'development' ? 'http://47.115.149.217' : window.httpUrl.slice(0, -5);
     //const res = await fetch(`${baseUrl}:8610/haidong/fakesearch?examNo=${ruleForm.examNo}`, {
-    const res = await fetch(`${baseUrl}:8610/haidong/search?examNo=${ruleForm.examNo}`, {
+    // const res = await fetch(`${baseUrl}:8610/haidong/search?examNo=${ruleForm.examNo}`, {
+    const res = await fetch(`${baseUrl}/haidong/search?examNo=${ruleForm.examNo}`, {
       method: 'GET',
       headers: {
         token: store.state.token,
@@ -962,10 +998,16 @@ const update = async (formEl: FormInstance | undefined) => {
       ElMessage.error("选择的数据不能多于内镜卡号数");
       return;
     }
-
-    // 正常批量提交
+    
     const ip = comboIp.value;
     const lensArr = comboLensCodes.value;
+    const duplicates = findDuplicateLensCodes(lensArr);
+    if (duplicates.length > 0) {
+      ElMessage.error(`检测到重复的内镜卡号：${duplicates.join('、')}`);
+      return;
+    }
+
+    // 正常批量提交
     if (comboValid.value && isExamNoValid.value) {
       const batch = selectedRows.value.map((row, i) => {
         return {

@@ -1,12 +1,10 @@
 import axios from 'axios';
 
 import store from '@/store';
+import baseUrl from '@/web/utils/baseUrl';
 
-console.log(process.env.NODE_ENV);
-
-const urlList = ['127.0.0.1', '47.115.149.217', '36.133.226.32'];
-
-const baseUrl = process.env.NODE_ENV === 'development' ? `http://${urlList[0]}:8610` : window.httpUrl;
+console.log('当前环境:', import.meta.env.MODE || process.env.NODE_ENV);
+console.log('API地址:', baseUrl);
 
 // 设置post方法的请求头
 axios.defaults.headers.post['Content-Type'] = 'application/x-www-form-urlencoded;charset=UTF-8';
@@ -24,7 +22,8 @@ const errorHandle = (code: number, msg: string) => {
       ElMessage.success(msg);
       break;
 
-    case 5000 || 5001:
+    case 5000:
+    case 5001:
       ElMessage.error(msg);
       break;
 
@@ -73,7 +72,9 @@ instance.interceptors.response.use(
       errorHandle(response.status, response.data.msg);
 
       return Promise.reject(response);
-    } else console.log(1);
+    } else {
+      console.log('网络请求失败:', error);
+    }
   }
 );
 

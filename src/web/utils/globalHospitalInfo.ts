@@ -1,9 +1,7 @@
 import hospital from '@/web/api/hospital';
 import { setHospitalInfo } from './hospitalInfo';
-
 // 获取baseURL
-const baseUrl = process.env.NODE_ENV === 'development' ? 'http://127.0.0.1:8610' : window.httpUrl.slice(0, -1);
-
+import baseUrl from '@/web/utils/baseUrl';
 // 全局获取医院信息方法
 export async function fetchHospitalInfo() {
   try {
@@ -49,4 +47,4 @@ export async function fetchHospitalInfo() {
 }
 
 // 导出baseUrl供其他模块使用
-export { baseUrl }; 
+export { baseUrl };

@@ -91,31 +91,37 @@
         <el-input v-model="passwordForm.userName" disabled style="width: 350px" />
       </el-form-item>
       <el-form-item label="新密码：" prop="newPassword">
-        <el-input
-          v-model="passwordForm.newPassword"
-          type="password"
-          placeholder="请输入新密码"
-          style="width: 350px"
+        <el-input 
+          v-model="passwordForm.newPassword" 
+          type="password" 
+          placeholder="请输入新密码" 
+          style="width: 350px" 
           show-password
         />
       </el-form-item>
       <el-form-item label="确认密码：" prop="confirmPassword">
-        <el-input
-          v-model="passwordForm.confirmPassword"
-          type="password"
-          placeholder="请再次输入新密码"
-          style="width: 350px"
+        <el-input 
+          v-model="passwordForm.confirmPassword" 
+          type="password" 
+          placeholder="请再次输入新密码" 
+          style="width: 350px" 
           show-password
         />
       </el-form-item>
       <el-row justify="center">
-        <my-btn
-          color="linear-gradient(180deg, #38F9D6 0%, #3EF0A4 59.17%, #6DEE99 100%)"
+        <my-btn 
+          color="linear-gradient(180deg, #38F9D6 0%, #3EF0A4 59.17%, #6DEE99 100%)" 
           @click="updatePassword(passwordFormRef)"
         >
           确认修改
         </my-btn>
-        <my-btn color="#fff" style="border: 1px solid #e4e7ed" @click="passwordDialog = false"> 取消 </my-btn>
+        <my-btn 
+          color="#fff" 
+          style="border: 1px solid #e4e7ed" 
+          @click="passwordDialog = false"
+        >
+          取消
+        </my-btn>
       </el-row>
     </el-form>
   </el-dialog>
@@ -198,7 +204,9 @@ const getList = async () => {
     const { data } = await adm.getList(query);
     userList.data = data;
   } catch (e) {
-    console.log(e);
+    console.log('获取用户列表失败:', e);
+    // 静默处理错误，不显示弹窗
+    userList.data = [];
   }
 };
 
@@ -224,7 +232,7 @@ const passwordForm = reactive({
 const passwordRules = reactive<FormRules>({
   newPassword: [
     { required: true, message: '请输入新密码', trigger: 'blur' },
-    { min: 6, message: '密码长度不能少于6位', trigger: 'blur' },
+    { min: 6, message: '密码长度不能少于6位', trigger: 'blur' }
   ],
   confirmPassword: [
     { required: true, message: '请确认密码', trigger: 'blur' },
@@ -236,9 +244,9 @@ const passwordRules = reactive<FormRules>({
           callback();
         }
       },
-      trigger: 'blur',
-    },
-  ],
+      trigger: 'blur'
+    }
+  ]
 });
 
 // 显示修改密码弹窗
@@ -254,16 +262,16 @@ const showChangePassword = (row: any) => {
 const updatePassword = async (formEl: FormInstance | undefined) => {
   try {
     if (!formEl) return;
-    await formEl.validate();
+    await formEl.validate(); 
 
     const data = {
       username: passwordForm.userName,
       newPassword: CryptoJS.MD5(passwordForm.newPassword).toString().toUpperCase(),
-      confirmPassword: CryptoJS.MD5(passwordForm.confirmPassword).toString().toUpperCase(),
+      confirmPassword: CryptoJS.MD5(passwordForm.confirmPassword).toString().toUpperCase()
     };
-
+    
     const response = await adm.updatePassword(data);
-
+    
     // 调试：打印响应数据
     console.log('修改密码响应:', response);
     const res = response.data ?? response;
@@ -274,7 +282,7 @@ const updatePassword = async (formEl: FormInstance | undefined) => {
     }
     // ElMessage.success('密码修改成功'); // 移除本地成功提示，交由全局拦截器处理
     passwordDialog.value = false;
-
+    
     // 清空表单
     passwordForm.userId = '';
     passwordForm.userName = '';

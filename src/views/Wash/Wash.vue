@@ -162,9 +162,12 @@ const getList = async () => {
     const { data } = await wash.getList();
     chamberList.data = data;
   } catch (e) {
-    console.log(e);
+    console.log('获取洗消室列表失败:', e);
+    // 静默处理错误，不显示弹窗
+    chamberList.data = [];
+  } finally {
+    tableLoad.value = false;
   }
-  tableLoad.value = false;
 };
 
 // 科室选项
