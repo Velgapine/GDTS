@@ -4,7 +4,9 @@
       <div class="step-card">
         <div class="inf">
           <div class="step" @click="stepDialog = true">
-            <el-icon size="22px"> <Setting /> </el-icon>步骤：
+            <el-icon size="22px">
+              <Setting />
+            </el-icon>步骤：
           </div>
         </div>
         <div class="show">
@@ -15,33 +17,26 @@
           </div>
         </div>
       </div>
-      <div
-        v-for="(item, index) in list"
-        :key="index"
-        class="monitor-card"
-        @click="toSingle(item.scopeId, item.scopeName, item.matchId)"
-      >
+      <div v-for="(item, index) in list" :key="index" class="monitor-card"
+        @click="toSingle(item.scopeId, item.scopeName, item.matchId)">
         <div class="inf" :class="{ blueName: item.isMachineWash }">
           <div class="name">{{ item.scopeName }}</div>
-          <div v-if="item.name" class="patient">病人：{{ item.name }}</div>
+          <div class="patient" v-if="item.name">病人:{{ item.name }}</div>
+          <div class="patient" v-else>病人:未知病人</div>
           <div class="date">{{ item.beginTime }}</div>
           <div v-if="machineWashTimes[item.scopeId]" class="machine-time">
-            <span style="color: #409eff">机洗已用：</span
-            ><span style="color: #409eff">{{ machineWashTimes[item.scopeId] }}</span>
+            <span style="color:#409eff">机洗已用：</span><span style="color:#409eff">{{ machineWashTimes[item.scopeId] }}</span>
           </div>
         </div>
         <div class="show">
           <div class="table">
             <div v-for="(e, i) in item.step" :key="i" class="item">
-              <div
-                class="time"
-                :class="{
-                  ing: e.state === 0,
-                  finish: e.state === 1,
-                  skip: e.state === 2,
-                  mach: e.state === 3,
-                }"
-              >
+              <div class="time" :class="{
+                ing: e.state === 0,
+                finish: e.state === 1,
+                skip: e.state === 2,
+                mach: e.state === 3,
+              }">
                 {{ e.time || '--:--:--' }}
               </div>
             </div>
@@ -101,8 +96,8 @@ function startTimer() {
     if (list.value) {
       list.value.forEach(async (item: any) => {
         if (item.isMachineWash && item.beginTime && item.scopeId) {
-          // 机洗时间逻辑（仿）
-          // if (item.beginTime && item.scopeId) {
+        // 机洗时间逻辑（仿）
+        // if (item.beginTime && item.scopeId) {
           let start = Date.parse(item.beginTime.replace(/-/g, '/'));
           if (isNaN(start)) start = new Date(item.beginTime).getTime();
           if (!isNaN(start)) {
@@ -118,7 +113,7 @@ function startTimer() {
         }
         // 干燥自动结束逻辑
         if (item.step && Array.isArray(item.step)) {
-          const dryStepIndex = stepList.value.findIndex((s) => s.name && s.name.includes('干燥'));
+          const dryStepIndex = stepList.value.findIndex(s => s.name && s.name.includes('干燥'));
           if (dryStepIndex !== -1 && item.step[dryStepIndex]) {
             const dryStep = item.step[dryStepIndex];
             // 干燥步骤已开始且未结束（state===0为进行中）
@@ -250,7 +245,7 @@ const getList = async () => {
         const lastSerial = step[len - 1].serial;
 
         const stepMap = new Map();
-        step.forEach((s) => stepMap.set(s.serial, s.time || ''));
+        step.forEach(s => stepMap.set(s.serial, s.time || ''));
 
         for (let i = 1; i <= stepList.value.length; i++) {
           const time = stepMap.get(i);
@@ -270,7 +265,7 @@ const getList = async () => {
         }
 
         if (isMachine) {
-          arr.forEach((s) => {
+          arr.forEach(s => {
             if (s.serial > firstSerial && s.serial < lastSerial) {
               s.state = 3; // "mach"
             }
@@ -301,25 +296,14 @@ const toSingle = (scopeId: string, scopeName: string, matchId: string) => {
   });
 };
 
-watch(
-  list,
-  (val) => {
-    console.log('监控数据:', val);
-    if (Array.isArray(val)) {
-      val.forEach((item, idx) => {
-        console.log(
-          `item[${idx}]: scopeId=`,
-          item.scopeId,
-          'beginTime=',
-          item.beginTime,
-          'isMachineWash=',
-          item.isMachineWash
-        );
-      });
-    }
-  },
-  { immediate: true, deep: true }
-);
+watch(list, (val) => {
+  console.log('监控数据:', val);
+  if (Array.isArray(val)) {
+    val.forEach((item, idx) => {
+      console.log(`item[${idx}]: scopeId=`, item.scopeId, 'beginTime=', item.beginTime, 'isMachineWash=', item.isMachineWash);
+    });
+  }
+}, { immediate: true, deep: true });
 </script>
 
 <style lang="scss" scoped>
@@ -372,7 +356,14 @@ header {
         .name {
           font-size: 26px;
           padding-bottom: 20px;
-          color: #000;
+          color: #000000;
+        }
+        .patient {
+          font-size: 20px;
+          font-weight: 600;
+          color: #409eff;
+          text-align: left;
+          align-self: flex-start;
         }
       }
 
