@@ -85,6 +85,8 @@ import { fetchHospitalInfo } from '@/web/utils/globalHospitalInfo';
 import hospital from '@/web/api/hospital';
 import type { FormInstance, FormRules } from 'element-plus';
 import { ElMessage, ElMessageBox } from 'element-plus';
+// 获取baseURL
+import baseUrl from '@/web/utils/baseUrl';
 
 const form = ref({
   id: null as number | null,
@@ -97,10 +99,6 @@ const editIndex = ref(-1);
 const tableLoad = ref(false);
 const saveLoading = ref(false);
 const hospitalList = ref<any[]>([]);
-
-// 获取baseURL
-const urlList = ['127.0.0.1', '47.115.149.217', '36.133.226.32'];
-const baseUrl = process.env.NODE_ENV === 'development' ? 'http://' + urlList[0] + ':8610' : window.httpUrl.slice(0, -1);
 
 // 计算当前医院的logo URL
 const currentHospitalLogo = computed(() => {
@@ -415,7 +413,7 @@ const getLogoUrl = (row: any) => {
 //     console.log('测试图片URL:', logoUrl);
 //     console.log('当前环境:', process.env.NODE_ENV);
 //     console.log('window.httpUrl:', window.httpUrl);
-//     
+//
 //     // 尝试直接访问图片
 //     if (logoUrl) {
 //       const img = new Image();
